@@ -13,4 +13,6 @@ Anggota Kelompok 4 :
     <video controls src="Recording-2026-10-01-095159.mp4" title="Title"></video>
 2. Tugas Anggota Kelompok
     - Accept Member
+    Nama: Rizki Aidil Fazri
+    ![alt text](<WhatsApp Image 2026-10-01 at 09.50.26.jpeg>)
     - Clone Project
