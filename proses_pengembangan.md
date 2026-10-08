@@ -3,7 +3,7 @@ Anggota Kelompok 4 :
 1. Ibrahim Hilal 2488010030
 2. Rizki Aidil Fazri_2488010021
 3. Pasya Nur Rizki_2488010052
-4. Nur Khotimah 2488010017
+4. Nurkhotimah 2488010017
 
 # Progres Pengembangan 1(Pertemuan 5)#
 1. Tugas Ketua Kelompok(Hilal)
@@ -15,4 +15,9 @@ Anggota Kelompok 4 :
     - Accept Member
     Nama: Rizki Aidil Fazri
     ![alt text](<WhatsApp Image 2026-10-01 at 09.50.26.jpeg>)
+    Nama: Nurkhotimah
+    <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/db48dba4-1387-4406-839d-0c1e037b74a0" />
+    Nama:Pasya Nur Rizki
+    <img width="1919" height="1199" alt="image" src="https://github.com/user-attachments/assets/94cc6c03-ed2a-4021-b9d1-fa1284f0c71b" />
+
     - Clone Project
