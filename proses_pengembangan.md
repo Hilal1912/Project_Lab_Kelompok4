@@ -15,4 +15,6 @@ Anggota Kelompok 4 :
     - Accept Member
     Nama: Rizki Aidil Fazri
     ![alt text](<WhatsApp Image 2026-10-01 at 09.50.26.jpeg>)
+    Nama: Nurkhotimah
+    <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/b7150910-872a-4407-aa1e-a77c2b9e302a" />
     - Clone Project
