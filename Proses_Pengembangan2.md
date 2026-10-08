@@ -5,3 +5,7 @@
     Delivery : Nur
     User : Hilal Dan Pasya
 - ss minimal Sketch up > sudah ada halamannya
+
+### Rancangan Antarmuka
+
+![Rancangan antarmuka aplikasi Nasi Bakar](assets/rancangan-antarmuka-nasi-bakar.png)
