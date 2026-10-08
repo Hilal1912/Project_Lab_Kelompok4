@@ -17,4 +17,7 @@ Anggota Kelompok 4 :
     ![alt text](<WhatsApp Image 2026-10-01 at 09.50.26.jpeg>)
     Nama: Nurkhotimah
     <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/db48dba4-1387-4406-839d-0c1e037b74a0" />
+    Nama:Pasya Nur Rizki
+    <img width="1919" height="1199" alt="image" src="https://github.com/user-attachments/assets/94cc6c03-ed2a-4021-b9d1-fa1284f0c71b" />
+
     - Clone Project
