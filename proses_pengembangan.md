@@ -3,7 +3,7 @@ Anggota Kelompok 4 :
 1. Ibrahim Hilal 2488010030
 2. Rizki Aidil Fazri_2488010021
 3. Pasya Nur Rizki_2488010052
-4. Nur Khotimah 2488010017
+4. Nurkhotimah 2488010017
 
 # Progres Pengembangan 1(Pertemuan 5)#
 1. Tugas Ketua Kelompok(Hilal)
