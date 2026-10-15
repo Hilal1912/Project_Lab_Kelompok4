@@ -10,7 +10,7 @@
 
 ![alt text](image-2.png)
 
-2. Nur Khotimah = 
+2. Nurkhotimah = 
 <img width="882" height="696" alt="Screenshot 2026-10-08 100250" src="https://github.com/user-attachments/assets/24bcf9b4-1eac-4d87-bc86-f0eb23bcadd0" />
 
 
