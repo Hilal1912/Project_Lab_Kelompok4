@@ -11,7 +11,7 @@ const LoginKurir = () => {
 
   const handleLogin = () => {
     // Logika autentikasi Kurir
-    router.replace('/');
+    router.replace('/pesanan-kurir');
   };
 
   return (

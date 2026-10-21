@@ -1,5 +1,5 @@
-import PesananSayaScreen from '../screens/kurir/PesananSayaScreen';
+import WelcomeScreen from '../screens/pelanggan/welcome/WelcomeScreen';
 
-export default function Index() {
-  return <PesananSayaScreen />;
+export default function IndexRoute() {
+  return <WelcomeScreen />;
 }

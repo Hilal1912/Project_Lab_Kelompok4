@@ -12,11 +12,15 @@ export default function DetailPesananScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const pesanan = pesananData.find((p) => p.id === id) ?? pesananData[0];
+  const goBack = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace('/admin/pesanan');
+  };
 
   return (
     <ScreenWrapper>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}><Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} /></TouchableOpacity>
+        <TouchableOpacity onPress={goBack}><Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} /></TouchableOpacity>
         <Text style={styles.headerTitle}>Detail Pesanan</Text>
         <View style={{ width: 24 }} />
       </View>

@@ -90,7 +90,7 @@ const RiwayatPengantaranScreen = () => {
               <TouchableOpacity
                 accessibilityRole="link"
                 onPress={() =>
-                  router.push({ pathname: '/detail-pesanan', params: { id: item.id } })
+                  router.push({ pathname: '/detail-pesanan-kurir', params: { id: item.id } })
                 }
                 className="mt-1"
               >

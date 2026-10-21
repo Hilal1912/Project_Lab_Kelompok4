@@ -4,17 +4,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ScreenWrapper from '../../components/layout/ScreenWrapper';
 import BadgeStatus from '../../components/ui/BadgeStatus';
-import { menuData, MenuItem } from '../../data/menuData';
+import { MenuItem } from '../../data/menuData';
+import { useMenu } from '../../context/menu-context';
 import { formatRupiah } from '../../utils/formatRupiah';
 import { COLORS, SPACING } from '../../utils/constants';
 
 export default function KelolaMenuScreen() {
   const router = useRouter();
+  const { menu } = useMenu();
   const [search, setSearch] = useState('');
-  const filtered = menuData.filter((m) => m.nama.toLowerCase().includes(search.toLowerCase()));
+  const filtered = menu.filter((m) => m.nama.toLowerCase().includes(search.toLowerCase()));
 
   const renderItem = ({ item }: { item: MenuItem }) => (
-    <TouchableOpacity style={styles.menuItem} onPress={() => router.push({ pathname: '/(admin)/detail-menu', params: { id: item.id } })} activeOpacity={0.8}>
+    <TouchableOpacity style={styles.menuItem} onPress={() => router.push({ pathname: '/admin/detail-menu', params: { id: item.id } })} activeOpacity={0.8}>
       <Image source={{ uri: item.gambar }} style={styles.menuImage} />
       <View style={styles.menuInfo}>
         <Text style={styles.menuNama}>{item.nama}</Text>
@@ -40,7 +42,7 @@ export default function KelolaMenuScreen() {
           <Ionicons name="search" size={16} color={COLORS.textMuted} style={{ marginRight: 6 }} />
           <TextInput style={styles.searchInput} placeholder="Cari menu..." placeholderTextColor={COLORS.textMuted} value={search} onChangeText={setSearch} />
         </View>
-        <TouchableOpacity style={styles.btnTambah} onPress={() => router.push('/(admin)/tambah-menu')} activeOpacity={0.85}>
+        <TouchableOpacity style={styles.btnTambah} onPress={() => router.push('/admin/tambah-menu')} activeOpacity={0.85}>
           <Text style={styles.btnTambahText}>Tambah Menu</Text>
         </TouchableOpacity>
       </View>

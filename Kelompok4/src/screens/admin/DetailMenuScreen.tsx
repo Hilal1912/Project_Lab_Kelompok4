@@ -4,14 +4,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import ScreenWrapper from '../../components/layout/ScreenWrapper';
 import BadgeStatus from '../../components/ui/BadgeStatus';
-import { menuData } from '../../data/menuData';
+import { useMenu } from '../../context/menu-context';
 import { formatRupiah } from '../../utils/formatRupiah';
 import { COLORS, SPACING } from '../../utils/constants';
 
 export default function DetailMenuScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const item = menuData.find((m) => m.id === id) ?? menuData[0];
+  const { menu } = useMenu();
+  const item = menu.find((m) => m.id === id) ?? menu[0];
 
   return (
     <ScreenWrapper>
@@ -41,7 +42,7 @@ export default function DetailMenuScreen() {
         {/* Nama Produk */}
         <TouchableOpacity
           style={styles.fieldRow}
-          onPress={() => router.push({ pathname: '/(admin)/edit-menu', params: { id: item.id, field: 'nama' } })}
+          onPress={() => router.push({ pathname: '/admin/edit-menu', params: { id: item.id, field: 'nama' } })}
           activeOpacity={0.8}
         >
           <Ionicons name="person-outline" size={20} color={COLORS.textMuted} style={{ marginRight: 14 }} />
@@ -54,7 +55,7 @@ export default function DetailMenuScreen() {
         {/* Harga Produk */}
         <TouchableOpacity
           style={styles.fieldRow}
-          onPress={() => router.push({ pathname: '/(admin)/edit-menu', params: { id: item.id, field: 'harga' } })}
+          onPress={() => router.push({ pathname: '/admin/edit-menu', params: { id: item.id, field: 'harga' } })}
           activeOpacity={0.8}
         >
           <Ionicons name="location-outline" size={20} color={COLORS.textMuted} style={{ marginRight: 14 }} />

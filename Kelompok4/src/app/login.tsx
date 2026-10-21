@@ -22,7 +22,10 @@ export default function LoginScreen() {
         {/* Tombol Back */}
         <TouchableOpacity
           className="w-10 h-10 justify-center"
-          onPress={() => router.back()} // Kembali ke layar sebelumnya
+          onPress={() => {
+            if (router.canGoBack()) router.back();
+            else router.replace('/');
+          }}
         >
           <Feather name="arrow-left" size={24} color="black" />
         </TouchableOpacity>
@@ -78,19 +81,30 @@ export default function LoginScreen() {
               className="w-full h-14 bg-green-800 rounded-lg justify-center items-center mt-6 active:bg-green-900"
               onPress={() => router.replace('/home')}
             >
-              <Text className="text-white text-lg font-semibold">Login</Text>
+              <Text className="text-white text-lg font-semibold">
+                Masuk sebagai Pelanggan
+              </Text>
             </TouchableOpacity>
 
             {__DEV__ && (
               <TouchableOpacity
                 className="w-full h-12 rounded-lg border border-green-800 justify-center items-center mt-4"
-                onPress={() => router.replace('/(admin)')}
+                onPress={() => router.replace('/admin/dashboard')}
               >
                 <Text className="text-green-800 text-base font-semibold">
-                  Demo Admin (tanpa login)
+                  Demo Admin (tanpa autentikasi)
                 </Text>
               </TouchableOpacity>
             )}
+
+            <TouchableOpacity
+              className="w-full h-12 rounded-lg border border-neutral-300 bg-white/70 justify-center items-center mt-3"
+              onPress={() => router.push('/login-kurir')}
+            >
+              <Text className="text-zinc-800 text-base font-semibold">
+                Login sebagai Kurir
+              </Text>
+            </TouchableOpacity>
           </View>
 
           <View className="w-full mt-6 flex-row justify-center items-center gap-1">
