@@ -21,4 +21,5 @@
 
 ### Rancangan Antarmuka
 
-![Rancangan antarmuka aplikasi Nasi Bakar](assets/rancangan-antarmuka-nasi-bakar.png)
+<img width="1565" height="752" alt="image" src="https://github.com/user-attachments/assets/8a9a1e7e-93e5-4170-adae-e0740fcbe7bf" />
+
