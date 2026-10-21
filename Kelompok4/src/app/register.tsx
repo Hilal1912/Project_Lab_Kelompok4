@@ -21,7 +21,10 @@ export default function RegisterScreen() {
         {/* Tombol Back */}
         <TouchableOpacity
           className="w-10 h-10 justify-center"
-          onPress={() => router.back()} // Mengembalikan ke layar login
+          onPress={() => {
+            if (router.canGoBack()) router.back();
+            else router.replace('/login');
+          }}
         >
           <Feather name="arrow-left" size={24} color="black" />
         </TouchableOpacity>

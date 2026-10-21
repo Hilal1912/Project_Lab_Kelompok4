@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-export default function AdminLayout() {
+export default function AdminTabsLayout() {
   return (
     <Tabs
       screenOptions={{
@@ -21,7 +21,7 @@ export default function AdminLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="dashboard"
         options={{
           title: 'Dashboard',
           tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={typeof color === 'string' ? color : '#9E9E9E'} />,
@@ -48,12 +48,7 @@ export default function AdminLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="bar-chart-outline" size={size} color={typeof color === 'string' ? color : '#9E9E9E'} />,
         }}
       />
-      {/* Sembunyikan dari tab bar */}
-      <Tabs.Screen name="detail-menu"    options={{ href: null, tabBarStyle: { display: 'none' } }} />
-      <Tabs.Screen name="edit-menu"      options={{ href: null, tabBarStyle: { display: 'none' } }} />
-      <Tabs.Screen name="detail-pesanan" options={{ href: null, tabBarStyle: { display: 'none' } }} />
-      <Tabs.Screen name="tambah-menu"    options={{ href: null, tabBarStyle: { display: 'none' } }} />
-      <Tabs.Screen name="pelanggan"      options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="pelanggan" options={{ href: null }} />
     </Tabs>
   );
 }

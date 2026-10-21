@@ -33,7 +33,7 @@ export default function KelolaPesananScreen() {
         data={filtered}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <CardPesanan item={item} onPress={() => router.push({ pathname: '/(admin)/detail-pesanan', params: { id: item.id } })} />
+          <CardPesanan item={item} onPress={() => router.push({ pathname: '/admin/detail-pesanan', params: { id: item.id } })} />
         )}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 32 }}

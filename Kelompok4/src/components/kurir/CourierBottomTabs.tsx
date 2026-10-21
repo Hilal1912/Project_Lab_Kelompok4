@@ -9,7 +9,7 @@ interface CourierBottomTabsProps {
 }
 
 const tabs = [
-  { key: 'orders', label: 'Pesanan', icon: 'receipt-outline', route: '/' },
+  { key: 'orders', label: 'Pesanan', icon: 'receipt-outline', route: '/pesanan-kurir' },
   { key: 'history', label: 'Riwayat', icon: 'time-outline', route: '/riwayat-pengantaran' },
   { key: 'profile', label: 'Profil', icon: 'user', route: '/profil-kurir' },
 ] as const;

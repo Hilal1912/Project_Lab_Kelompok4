@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ScreenWrapper from '../../components/layout/ScreenWrapper';
+import { useMenu } from '../../context/menu-context';
 
 export default function TambahMenuScreen() {
   const router = useRouter();
+  const { addMenu } = useMenu();
   const [nama, setNama] = useState('');
   const [harga, setHarga] = useState('');
   const [deskripsi, setDeskripsi] = useState('');
@@ -16,23 +18,26 @@ export default function TambahMenuScreen() {
     const e: { nama?: string; harga?: string } = {};
     if (!nama.trim()) e.nama = 'Nama menu wajib diisi';
     if (!harga.trim()) e.harga = 'Harga wajib diisi';
-    else if (isNaN(Number(harga))) e.harga = 'Harga harus berupa angka';
+    else if (!Number.isFinite(Number(harga)) || Number(harga) <= 0) e.harga = 'Harga harus berupa angka lebih dari 0';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   const handleSimpan = () => {
     if (!validate()) return;
-    Alert.alert('Berhasil', 'Menu berhasil ditambahkan!', [
-      { text: 'OK', onPress: () => router.back() },
-    ]);
+    addMenu({ nama: nama.trim(), harga: Number(harga), kategori, deskripsi: deskripsi.trim() });
+    if (router.canGoBack()) router.back();
+    else router.replace('/admin/menu');
   };
 
   return (
     <ScreenWrapper>
       {/* Header */}
       <View className="flex-row items-center justify-between px-4 py-4">
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => {
+          if (router.canGoBack()) router.back();
+          else router.replace('/admin/menu');
+        }}>
           <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
         </TouchableOpacity>
         <Text className="text-xl font-bold text-text-main">Tambah Menu</Text>

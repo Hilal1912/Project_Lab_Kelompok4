@@ -90,7 +90,7 @@ const PesananSayaScreen = () => {
               <TouchableOpacity
                 accessibilityRole="button"
                 onPress={() =>
-                  router.push({ pathname: '/detail-pesanan', params: { id: order.id } })
+                  router.push({ pathname: '/detail-pesanan-kurir', params: { id: order.id } })
                 }
                 className="items-center justify-center rounded-md bg-emerald-800 px-3 py-2"
               >

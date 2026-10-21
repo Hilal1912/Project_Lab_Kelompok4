@@ -4,28 +4,38 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import ScreenWrapper from '../../components/layout/ScreenWrapper';
 import BadgeStatus from '../../components/ui/BadgeStatus';
-import { menuData } from '../../data/menuData';
+import { useMenu } from '../../context/menu-context';
 import { formatRupiah } from '../../utils/formatRupiah';
 import { COLORS, SPACING } from '../../utils/constants';
 
 export default function EditMenuScreen() {
   const router = useRouter();
   const { id, field } = useLocalSearchParams<{ id: string; field: string }>();
-  const item = menuData.find((m) => m.id === id) ?? menuData[0];
+  const { menu, updateMenu } = useMenu();
+  const item = menu.find((m) => m.id === id) ?? menu[0];
   const isNama = field === 'nama';
   const [value, setValue] = useState(isNama ? item.nama : String(item.harga));
 
   const handleSimpan = () => {
     if (!value.trim()) { Alert.alert('Error', 'Field tidak boleh kosong'); return; }
-    Alert.alert('Berhasil', `${isNama ? 'Nama' : 'Harga'} berhasil diperbarui!`, [
-      { text: 'OK', onPress: () => router.back() },
-    ]);
+    if (!isNama && (!Number.isFinite(Number(value)) || Number(value) <= 0)) {
+      Alert.alert('Error', 'Harga harus berupa angka lebih dari 0');
+      return;
+    }
+    updateMenu(item.id, isNama ? { nama: value.trim() } : { harga: Number(value) });
+    if (router.canGoBack()) router.back();
+    else router.replace({ pathname: '/admin/detail-menu', params: { id: item.id } });
+  };
+
+  const goBack = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace({ pathname: '/admin/detail-menu', params: { id: item.id } });
   };
 
   return (
     <ScreenWrapper>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={goBack}>
           <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{isNama ? 'Edit Nama Produk' : 'Edit Harga Produk'}</Text>
@@ -64,7 +74,7 @@ export default function EditMenuScreen() {
         <TouchableOpacity style={styles.btnSimpan} onPress={handleSimpan} activeOpacity={0.85}>
           <Text style={styles.btnSimpanText}>Simpan Perubahan</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.btnBatal} onPress={() => router.back()} activeOpacity={0.85}>
+        <TouchableOpacity style={styles.btnBatal} onPress={goBack} activeOpacity={0.85}>
           <Text style={styles.btnBatalText}>Batal</Text>
         </TouchableOpacity>
       </View>
