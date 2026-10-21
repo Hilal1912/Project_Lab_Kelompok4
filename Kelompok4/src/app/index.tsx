@@ -1,6 +1,5 @@
-import React from 'react';
-import AppNavigator from '../navigation/AppNavigator';
+import CartScreen from '../screens/pelanggan/order/CartScreen';
 
-export default function Page() {
-  return <AppNavigator />;
+export default function IndexRoute() {
+  return <CartScreen />;
 }
