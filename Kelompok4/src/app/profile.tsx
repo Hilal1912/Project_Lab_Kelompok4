@@ -1,5 +1,5 @@
-import ProfileScreen from '../screens/pelanggan/profile/ProfileScreen';
+import ProfilScreen from '../screens/pelanggan/Profil/ProfilScreen';
 
 export default function ProfileRoute() {
-  return <ProfileScreen />;
+  return <ProfilScreen />;
 }

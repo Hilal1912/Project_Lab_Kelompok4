@@ -1,12 +1,5 @@
-import { Redirect } from 'expo-router';
-import CartScreen from '../screens/pelanggan/order/CartScreen';
+import WelcomeScreen from '../screens/pelanggan/welcome/WelcomeScreen';
 
-export default function Page() {
-  const isAdmin = false;
-
-  if (isAdmin) {
-    return <Redirect href={'/(admin)' as any} />;
-  }
-
-  return <CartScreen />;
+export default function WelcomeRoute() {
+  return <WelcomeScreen />;
 }
