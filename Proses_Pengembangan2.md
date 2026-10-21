@@ -48,3 +48,6 @@ Penjelasan: Pembuatan aplikasi didasarkan pada studi kasus nyata. Dokumentasi in
 Dokumentasi:
 <img width="1280" height="720" alt="WhatsApp Image 2026-10-18 at 05 43 19" src="https://github.com/user-attachments/assets/e54dfcd7-f0a9-4562-ad98-6288fd3c0860" />
 
+
+Video Demo:
+<img width="400" height="816" alt="iPhone-14-PRO-localhost-0h_pwfxehb2cru" src="https://github.com/user-attachments/assets/42d0ead3-1d18-4c4c-a931-bc8ff1a29daa" />
