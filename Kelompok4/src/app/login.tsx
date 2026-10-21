@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router'; // Tambahkan router
@@ -12,7 +12,12 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-orange-50">
-      <View className="px-6 pt-3 pb-6 flex-1">
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+      >
+      <View className="px-6 pt-3 pb-6">
 
         {/* Tombol Back */}
         <TouchableOpacity
@@ -75,6 +80,17 @@ export default function LoginScreen() {
             >
               <Text className="text-white text-lg font-semibold">Login</Text>
             </TouchableOpacity>
+
+            {__DEV__ && (
+              <TouchableOpacity
+                className="w-full h-12 rounded-lg border border-green-800 justify-center items-center mt-4"
+                onPress={() => router.replace('/(admin)')}
+              >
+                <Text className="text-green-800 text-base font-semibold">
+                  Demo Admin (tanpa login)
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           <View className="w-full mt-6 flex-row justify-center items-center gap-1">
@@ -86,6 +102,7 @@ export default function LoginScreen() {
 
         </View>
       </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
