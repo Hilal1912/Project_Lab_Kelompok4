@@ -1,23 +1,27 @@
 import React from 'react';
-import { SafeAreaView, StyleSheet, ViewStyle } from 'react-native';
-import { COLORS } from '../../utils/constants';
+import { ViewProps } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-interface Props {
+interface ScreenWrapperProps extends ViewProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  className?: string;
 }
 
-export default function ScreenWrapper({ children, style }: Props) {
+const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
+  children,
+  className = '',
+  style,
+  ...props
+}) => {
   return (
-    <SafeAreaView style={[styles.container, style]}>
+    <SafeAreaView
+      style={style}
+      className={`flex-1 bg-orange-50 ${className}`}
+      {...props}
+    >
       {children}
     </SafeAreaView>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-});
+export default ScreenWrapper;

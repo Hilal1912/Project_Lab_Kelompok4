@@ -24,28 +24,28 @@ export default function AdminLayout() {
         name="index"
         options={{
           title: 'Dashboard',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={typeof color === 'string' ? color : '#9E9E9E'} />,
         }}
       />
       <Tabs.Screen
         name="menu"
         options={{
           title: 'Menu',
-          tabBarIcon: ({ color, size }) => <Ionicons name="restaurant-outline" size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => <Ionicons name="restaurant-outline" size={size} color={typeof color === 'string' ? color : '#9E9E9E'} />,
         }}
       />
       <Tabs.Screen
         name="pesanan"
         options={{
           title: 'Pesanan',
-          tabBarIcon: ({ color, size }) => <Ionicons name="receipt-outline" size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => <Ionicons name="receipt-outline" size={size} color={typeof color === 'string' ? color : '#9E9E9E'} />,
         }}
       />
       <Tabs.Screen
         name="laporan"
         options={{
           title: 'Laporan',
-          tabBarIcon: ({ color, size }) => <Ionicons name="bar-chart-outline" size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => <Ionicons name="bar-chart-outline" size={size} color={typeof color === 'string' ? color : '#9E9E9E'} />,
         }}
       />
       {/* Sembunyikan dari tab bar */}
