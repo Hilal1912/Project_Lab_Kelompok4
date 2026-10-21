@@ -23,3 +23,29 @@
 
 <img width="1565" height="752" alt="image" src="https://github.com/user-attachments/assets/8a9a1e7e-93e5-4170-adae-e0740fcbe7bf" />
 
+---
+
+## Proses Pengembangan 2 — Implementasi dan Pengujian
+
+Pembaruan: **22 Oktober 2026**
+
+Pada tahap ini, rancangan antarmuka dikembangkan menjadi aplikasi mobile menggunakan React Native, Expo, dan Expo Router. Aplikasi menyediakan alur untuk pelanggan, admin, dan kurir.
+
+### Hasil Implementasi
+
+- **Pelanggan:** halaman pembuka dan login, beranda, daftar menu, keranjang, pemilihan jenis pesanan, checkout, pesanan, dan profil.
+- **Admin:** dashboard, pengelolaan menu, pesanan, dan laporan. Form tambah menu menampilkan menu baru pada daftar selama aplikasi berjalan; perubahan data demo belum disimpan ke backend.
+- **Kurir:** login demo, daftar pesanan berdasarkan status, detail pesanan, riwayat pengantaran, serta halaman profil dan informasi kurir.
+- **Navigasi:** alur admin dipisahkan pada rute `/admin`, sedangkan rute detail pesanan kurir dibuat terpisah dari detail pesanan admin. Tombol kembali pada halaman admin memiliki tujuan cadangan agar tidak mengirim pengguna ke beranda yang keliru.
+
+### Pengujian
+
+Build web Expo dan pemeriksaan TypeScript berhasil dijalankan. Alur demo admin, tambah menu, membuka detail pesanan admin, dan kembali ke daftar pesanan juga sudah dicoba pada web.
+
+### Batasan Versi Demo
+
+Login pelanggan, admin, dan kurir pada versi ini belum menggunakan autentikasi backend. Data menu dan pesanan admin masih berupa data contoh; menu yang ditambahkan dikelola sementara di memori aplikasi dan dapat hilang saat aplikasi dimulai ulang. Versi ini ditujukan untuk demonstrasi antarmuka dan alur navigasi, bukan transaksi produksi.
+
+### Video Demonstrasi
+
+[Tonton atau unduh video demonstrasi aplikasi](assets/Recording-2026-10-01-095159.mp4).
