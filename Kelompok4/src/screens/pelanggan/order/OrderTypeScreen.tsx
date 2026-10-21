@@ -1,86 +1,127 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
   SafeAreaView,
   ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+
+type OrderType = 'dine_in' | 'takeaway' | 'delivery';
+
+const orderOptions: {
+  value: OrderType;
+  title: string;
+  description: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  {
+    value: 'dine_in',
+    title: 'Dine-in',
+    description: 'Makan di tempat',
+    icon: 'restaurant-outline',
+  },
+  {
+    value: 'takeaway',
+    title: 'Take Away',
+    description: 'Ambil di outlet',
+    icon: 'bag-handle-outline',
+  },
+  {
+    value: 'delivery',
+    title: 'Delivery',
+    description: 'Diantar ke alamat Anda',
+    icon: 'bicycle-outline',
+  },
+];
+
+function getParam(value: string | string[] | undefined, fallback = '') {
+  return Array.isArray(value) ? value[0] ?? fallback : value ?? fallback;
+}
 
 export default function OrderTypeScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const [orderType, setOrderType] = useState<OrderType>('dine_in');
 
-  const handleSelectType = (type: string) => {
-    // Pindah ke Checkout Screen
-    router.push('/checkout');
+  const continueToCheckout = () => {
+    router.push({
+      pathname: '/checkout',
+      params: {
+        total: getParam(params.total, '20000'),
+        note: getParam(params.note),
+        nasiQuantity: getParam(params.nasiQuantity, '1'),
+        esTehQuantity: getParam(params.esTehQuantity, '1'),
+        orderType,
+      },
+    });
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#1e293b" />
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+          accessibilityLabel="Kembali"
+        >
+          <Ionicons name="arrow-back" size={22} color="#19231F" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Jenis Order</Text>
-        <View style={{ width: 24 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.subTitle}>
+        <Text style={styles.intro}>
           Pilih jenis pesanan yang sesuai dengan kebutuhan Anda.
         </Text>
 
-        {/* Option: Dine-in */}
-        <TouchableOpacity
-          style={styles.cardOption}
-          onPress={() => handleSelectType('Dine-in')}>
-          <View style={styles.iconBox}>
-            <Ionicons name="restaurant-outline" size={28} color="#115e59" />
-          </View>
-          <View style={styles.cardText}>
-            <Text style={styles.cardTitle}>Dine-in</Text>
-            <Text style={styles.cardDesc}>Makan di tempat</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
-        </TouchableOpacity>
+        <View style={styles.options}>
+          {orderOptions.map((option) => {
+            const selected = orderType === option.value;
 
-        {/* Option: Take Away */}
-        <TouchableOpacity
-          style={styles.cardOption}
-          onPress={() => handleSelectType('Take Away')}>
-          <View style={styles.iconBox}>
-            <Ionicons name="bag-handle-outline" size={28} color="#115e59" />
-          </View>
-          <View style={styles.cardText}>
-            <Text style={styles.cardTitle}>Take Away</Text>
-            <Text style={styles.cardDesc}>Ambil di outlet</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
-        </TouchableOpacity>
+            return (
+              <TouchableOpacity
+                key={option.value}
+                activeOpacity={0.8}
+                onPress={() => setOrderType(option.value)}
+                style={[styles.option, selected && styles.selectedOption]}
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+              >
+                <View style={styles.optionIcon}>
+                  <Ionicons name={option.icon} size={23} color="#155A3D" />
+                </View>
+                <View style={styles.optionText}>
+                  <Text style={styles.optionTitle}>{option.title}</Text>
+                  <Text style={styles.optionDescription}>{option.description}</Text>
+                </View>
+                <Ionicons
+                  name={selected ? 'radio-button-on' : 'chevron-forward'}
+                  size={20}
+                  color={selected ? '#155A3D' : '#79828A'}
+                />
+              </TouchableOpacity>
+            );
+          })}
+        </View>
 
-        {/* Option: Delivery */}
-        <TouchableOpacity
-          style={styles.cardOption}
-          onPress={() => handleSelectType('Delivery')}>
-          <View style={styles.iconBox}>
-            <Ionicons name="bicycle-outline" size={28} color="#115e59" />
-          </View>
-          <View style={styles.cardText}>
-            <Text style={styles.cardTitle}>Delivery</Text>
-            <Text style={styles.cardDesc}>Diantar ke alamat Anda</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
-        </TouchableOpacity>
-
-        <View style={styles.infoBox}>
-          <Ionicons name="location-outline" size={20} color="#854d0e" />
-          <Text style={styles.infoText}>
+        <View style={styles.deliveryNotice}>
+          <Ionicons name="information-circle-outline" size={18} color="#A88621" />
+          <Text style={styles.deliveryNoticeText}>
             Layanan delivery hanya tersedia untuk wilayah Kota Cirebon.
           </Text>
         </View>
+
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={styles.continueButton}
+          onPress={continueToCheckout}
+        >
+          <Text style={styles.continueButtonText}>Lanjut ke Checkout</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -89,52 +130,97 @@ export default function OrderTypeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fafafa',
-    maxWidth: 500,
-    width: '100%',
-    alignSelf: 'center',
+    backgroundColor: '#FAF8F1',
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    height: 56,
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-  },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
-  content: { padding: 20 },
-  subTitle: { fontSize: 14, color: '#64748b', marginBottom: 20, lineHeight: 20 },
-  cardOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+    gap: 12,
   },
-  iconBox: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#fef9c3',
+  backButton: {
+    padding: 4,
+  },
+  headerTitle: {
+    color: '#19231F',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  content: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 28,
+    gap: 16,
+  },
+  intro: {
+    color: '#79828A',
+    fontSize: 13,
+    marginBottom: 2,
+  },
+  options: {
+    gap: 12,
+  },
+  option: {
+    minHeight: 82,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E1E4E1',
+    borderRadius: 12,
+  },
+  selectedOption: {
+    borderColor: '#155A3D',
+    backgroundColor: '#F5FAF6',
+  },
+  optionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#F8F0CB',
   },
-  cardText: { flex: 1, marginLeft: 16 },
-  cardTitle: { fontSize: 16, fontWeight: '700', color: '#0f172a' },
-  cardDesc: { fontSize: 13, color: '#64748b', marginTop: 2 },
-  infoBox: {
+  optionText: {
+    flex: 1,
+    gap: 3,
+  },
+  optionTitle: {
+    color: '#19231F',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  optionDescription: {
+    color: '#79828A',
+    fontSize: 12,
+  },
+  deliveryNotice: {
+    padding: 12,
     flexDirection: 'row',
-    backgroundColor: '#fef9c3',
-    padding: 14,
-    borderRadius: 10,
     alignItems: 'center',
-    marginTop: 8,
+    gap: 8,
+    backgroundColor: '#F8F0CB',
+    borderRadius: 8,
   },
-  infoText: { fontSize: 12, color: '#854d0e', marginLeft: 10, flex: 1 },
+  deliveryNoticeText: {
+    flex: 1,
+    color: '#8A7228',
+    fontSize: 11,
+  },
+  continueButton: {
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#155A3D',
+    borderRadius: 8,
+    marginTop: 4,
+  },
+  continueButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
 });

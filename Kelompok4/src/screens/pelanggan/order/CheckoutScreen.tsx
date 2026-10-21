@@ -1,100 +1,206 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
+  Alert,
   SafeAreaView,
   ScrollView,
+  StyleSheet,
+  Text,
   TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
-export default function CheckoutScreen({ navigation }: any) {
-  const [paymentMethod, setPaymentMethod] = useState('Cash');
+type OrderType = 'dine_in' | 'takeaway' | 'delivery';
+type PaymentMethod = 'cash' | 'transfer' | 'qris';
+
+const paymentOptions: {
+  value: PaymentMethod;
+  title: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  { value: 'cash', title: 'Tunai', icon: 'cash-outline' },
+  { value: 'transfer', title: 'Transfer Bank', icon: 'card-outline' },
+  { value: 'qris', title: 'QRIS', icon: 'qr-code-outline' },
+];
+
+function getParam(value: string | string[] | undefined, fallback = '') {
+  return Array.isArray(value) ? value[0] ?? fallback : value ?? fallback;
+}
+
+function getNumberParam(value: string | string[] | undefined, fallback: number) {
+  const parsed = Number(getParam(value));
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
+export default function CheckoutScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [courierNote, setCourierNote] = useState(getParam(params.note));
+
+  const nasiQuantity = getNumberParam(params.nasiQuantity, 1);
+  const esTehQuantity = getNumberParam(params.esTehQuantity, 1);
+  const calculatedTotal = nasiQuantity * 15000 + esTehQuantity * 5000;
+  const total = getNumberParam(params.total, calculatedTotal);
+  const rawOrderType = getParam(params.orderType, 'dine_in');
+  const orderType: OrderType =
+    rawOrderType === 'takeaway' || rawOrderType === 'delivery'
+      ? rawOrderType
+      : 'dine_in';
+  const orderTypeLabel =
+    orderType === 'dine_in'
+      ? 'Dine-in'
+      : orderType === 'takeaway'
+        ? 'Take Away'
+        : 'Delivery';
+
+  const handleProcessOrder = () => {
+    if (orderType === 'delivery' && !deliveryAddress.trim()) {
+      Alert.alert('Alamat belum diisi', 'Masukkan alamat pengiriman terlebih dahulu.');
+      return;
+    }
+
+    Alert.alert(
+      'Pesanan Berhasil!',
+      'Pesanan kamu sedang diproses oleh dapur.',
+      [
+        {
+          text: 'Kembali ke Beranda',
+          onPress: () => router.replace('/'),
+        },
+      ],
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation?.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#1e293b" />
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+          accessibilityLabel="Kembali"
+        >
+          <Ionicons name="arrow-back" size={22} color="#19231F" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Checkout</Text>
-        <View style={{ width: 24 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Detail Pesanan */}
-        <Text style={styles.sectionTitle}>Detail Pesanan</Text>
         <View style={styles.card}>
-          <View style={styles.rowBetween}>
-            <Text style={styles.itemText}>Nasi Bakar Ayam x1</Text>
-            <Text style={styles.itemPrice}>Rp 15.000</Text>
-          </View>
-          <View style={styles.rowBetween}>
-            <Text style={styles.itemText}>Es Teh Manis x1</Text>
-            <Text style={styles.itemPrice}>Rp 5.000</Text>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.rowBetween}>
-            <Text style={styles.label}>Subtotal</Text>
-            <Text style={styles.value}>Rp 20.000</Text>
-          </View>
-          <View style={styles.rowBetween}>
-            <Text style={styles.label}>Ongkir</Text>
-            <Text style={styles.value}>Rp 20.000</Text>
-          </View>
-        </View>
-
-        {/* Alamat Pengiriman */}
-        <Text style={styles.sectionTitle}>Alamat Pengiriman</Text>
-        <View style={styles.card}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="location" size={20} color="#115e59" />
-            <Text style={styles.addressTitle}>Rumah</Text>
-          </View>
-          <Text style={styles.addressText}>
-            Jl. Melati No. 12, Kec. Harjamukti, Kota Cirebon
-          </Text>
-        </View>
-
-        {/* Catatan Kurir */}
-        <Text style={styles.sectionTitle}>Catatan untuk Kurir</Text>
-        <TextInput
-          style={styles.inputNote}
-          placeholder="Contoh: depan warung, pintu warna biru."
-          placeholderTextColor="#a1a1aa"
-        />
-
-        {/* Metode Pembayaran */}
-        <Text style={styles.sectionTitle}>Metode Pembayaran</Text>
-        <View style={styles.paymentRow}>
-          {['Cash', 'Transfer Bank', 'QRIS'].map((method) => (
-            <TouchableOpacity
-              key={method}
-              style={[
-                styles.radioBtn,
-                paymentMethod === method && styles.radioBtnActive,
-              ]}
-              onPress={() => setPaymentMethod(method)}>
-              <Text
-                style={[
-                  styles.radioText,
-                  paymentMethod === method && styles.radioTextActive,
-                ]}>
-                {method}
+          <Text style={styles.sectionTitle}>Detail Pesanan</Text>
+          {nasiQuantity > 0 && (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Nasi Bakar Ayam  ×{nasiQuantity}</Text>
+              <Text style={styles.detailValue}>
+                Rp {(15000 * nasiQuantity).toLocaleString('id-ID')}
               </Text>
-            </TouchableOpacity>
-          ))}
+            </View>
+          )}
+          {esTehQuantity > 0 && (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Es Teh Manis  ×{esTehQuantity}</Text>
+              <Text style={styles.detailValue}>
+                Rp {(5000 * esTehQuantity).toLocaleString('id-ID')}
+              </Text>
+            </View>
+          )}
+          <View style={styles.separator} />
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Subtotal</Text>
+            <Text style={styles.detailValue}>Rp {total.toLocaleString('id-ID')}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Ongkir</Text>
+            <Text style={styles.detailValue}>Rp 0</Text>
+          </View>
         </View>
 
-        {/* Total & Button */}
-        <View style={styles.totalContainer}>
-          <Text style={styles.totalLabel}>Total</Text>
-          <Text style={styles.totalValue}>Rp 20.000</Text>
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Jenis Order</Text>
+          <View style={styles.detailRow}>
+            <View style={styles.orderType}>
+              <Ionicons
+                name={orderType === 'delivery' ? 'bicycle-outline' : 'restaurant-outline'}
+                size={18}
+                color="#155A3D"
+              />
+              <Text style={styles.detailValue}>{orderTypeLabel}</Text>
+            </View>
+            {orderType === 'delivery' && (
+              <View style={styles.deliveryBadge}>
+                <Text style={styles.deliveryBadgeText}>Ubah</Text>
+              </View>
+            )}
+          </View>
+
+          {orderType === 'delivery' && (
+            <>
+              <Text style={styles.fieldLabel}>Alamat Pengiriman</Text>
+              <TextInput
+                value={deliveryAddress}
+                onChangeText={setDeliveryAddress}
+                placeholder="Masukkan alamat lengkap"
+                placeholderTextColor="#929A96"
+                style={styles.input}
+                multiline
+                textAlignVertical="top"
+              />
+              <Text style={styles.fieldLabel}>Catatan untuk Kurir</Text>
+              <TextInput
+                value={courierNote}
+                onChangeText={setCourierNote}
+                placeholder="Contoh: depan pagar warna putih."
+                placeholderTextColor="#929A96"
+                style={[styles.input, styles.noteInput]}
+                multiline
+                textAlignVertical="top"
+              />
+            </>
+          )}
         </View>
-        <TouchableOpacity style={styles.btnPrimary}>
-          <Text style={styles.btnPrimaryText}>Buat Pesanan</Text>
+
+        <View style={styles.paymentSection}>
+          <Text style={styles.sectionTitle}>Metode Pembayaran</Text>
+          <View style={styles.paymentOptions}>
+            {paymentOptions.map((option) => {
+              const selected = paymentMethod === option.value;
+
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  onPress={() => setPaymentMethod(option.value)}
+                  activeOpacity={0.8}
+                  style={styles.paymentOption}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                >
+                  <Ionicons name={option.icon} size={17} color="#155A3D" />
+                  <Text style={styles.paymentLabel}>{option.title}</Text>
+                  <Ionicons
+                    name={selected ? 'radio-button-on' : 'radio-button-off'}
+                    size={16}
+                    color={selected ? '#155A3D' : '#929A96'}
+                  />
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={styles.totalRow}>
+          <Text style={styles.totalLabel}>Total</Text>
+          <Text style={styles.totalValue}>Rp {total.toLocaleString('id-ID')}</Text>
+        </View>
+
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={styles.submitButton}
+          onPress={handleProcessOrder}
+        >
+          <Text style={styles.submitButtonText}>Buat Pesanan</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -102,94 +208,149 @@ export default function CheckoutScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fafafa' },
+  container: {
+    flex: 1,
+    backgroundColor: '#FAF8F1',
+  },
   header: {
+    height: 56,
+    paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    gap: 12,
   },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
-  content: { padding: 20 },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginTop: 12,
-    marginBottom: 8,
+  backButton: {
+    padding: 4,
+  },
+  headerTitle: {
+    color: '#19231F',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  content: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 28,
+    gap: 12,
   },
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
+    padding: 14,
+    gap: 10,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#f1f5f9',
-    marginBottom: 12,
+    borderColor: '#E1E4E1',
+    borderRadius: 10,
   },
-  rowBetween: {
+  sectionTitle: {
+    color: '#19231F',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  detailLabel: {
+    flex: 1,
+    color: '#68736E',
+    fontSize: 11,
+  },
+  detailValue: {
+    color: '#19231F',
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#EEF0EC',
+    marginVertical: 1,
+  },
+  orderType: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  },
+  deliveryBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: '#E8F3EA',
+    borderRadius: 8,
+  },
+  deliveryBadgeText: {
+    color: '#155A3D',
+    fontSize: 9,
+  },
+  fieldLabel: {
+    color: '#19231F',
+    fontSize: 11,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  input: {
+    minHeight: 42,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    color: '#19231F',
+    fontSize: 11,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E1E4E1',
+    borderRadius: 7,
+  },
+  noteInput: {
+    minHeight: 38,
+  },
+  paymentSection: {
+    gap: 8,
+  },
+  paymentOptions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 10,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E1E4E1',
+    borderRadius: 8,
+    gap: 6,
+  },
+  paymentOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  paymentLabel: {
+    color: '#68736E',
+    fontSize: 9,
+  },
+  totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 6,
+    alignItems: 'center',
+    paddingVertical: 2,
   },
-  itemText: { fontSize: 13, color: '#334155' },
-  itemPrice: { fontSize: 13, color: '#64748b' },
-  divider: {
-    height: 1,
-    backgroundColor: '#f1f5f9',
-    marginVertical: 10,
+  totalLabel: {
+    color: '#19231F',
+    fontSize: 12,
+    fontWeight: '500',
   },
-  label: { fontSize: 13, color: '#64748b' },
-  value: { fontSize: 13, fontWeight: '600', color: '#115e59' },
-  addressTitle: {
+  totalValue: {
+    color: '#155A3D',
     fontSize: 14,
     fontWeight: '700',
-    color: '#0f172a',
-    marginLeft: 6,
   },
-  addressText: { fontSize: 12, color: '#64748b', marginTop: 4 },
-  inputNote: {
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 10,
-    padding: 12,
+  submitButton: {
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#155A3D',
+    borderRadius: 7,
+  },
+  submitButtonText: {
+    color: '#FFFFFF',
     fontSize: 13,
-    marginBottom: 12,
+    fontWeight: '600',
   },
-  paymentRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  radioBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 8,
-    alignItems: 'center',
-    marginHorizontal: 4,
-  },
-  radioBtnActive: { borderColor: '#115e59', backgroundColor: '#f0fdf4' },
-  radioText: { fontSize: 12, color: '#64748b' },
-  radioTextActive: { color: '#115e59', fontWeight: '700' },
-  totalContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  totalLabel: { fontSize: 16, fontWeight: '700', color: '#0f172a' },
-  totalValue: { fontSize: 18, fontWeight: '700', color: '#115e59' },
-  btnPrimary: {
-    backgroundColor: '#115e59',
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  btnPrimaryText: { color: '#ffffff', fontSize: 15, fontWeight: '700' },
 });
