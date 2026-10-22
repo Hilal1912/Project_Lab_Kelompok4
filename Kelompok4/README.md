@@ -25,6 +25,12 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+## Data Kurir
+
+Alur kurir mencakup detail dan edit profil, status ketersediaan, informasi kendaraan, detail pesanan, konfirmasi ambil/mulai antar/selesaikan, ringkasan berhasil, detail riwayat, dan informasi menu terlaris.
+
+Status pesanan, riwayat pengantaran, status aktif kurir, informasi profil, dan kendaraan disimpan secara lokal menggunakan AsyncStorage. Perubahan tetap tersedia setelah aplikasi dimuat ulang pada perangkat atau browser yang sama, tetapi belum disinkronkan ke backend maupun perangkat lain. Data ini adalah data demo dan penyimpanan AsyncStorage tidak dienkripsi.
+
 ## Get a fresh project
 
 When you're ready, run:

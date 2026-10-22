@@ -1,5 +1,5 @@
-import CartScreen from '../screens/pelanggan/order/CartScreen';
+import PesananSayaScreen from '../screens/kurir/PesananSayaScreen';
 
-export default function IndexRoute() {
-  return <CartScreen />;
+export default function Index() {
+  return <PesananSayaScreen />;
 }
