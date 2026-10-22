@@ -1,4 +1,4 @@
-import OrderTypeScreen from '../screens/pelanggan/order/OrderTypeScreen';
+import OrderTypeScreen from '../screens/pelanggan/JenisOrder/JenisOrderScreen';
 
 export default function OrderTypeRoute() {
   return <OrderTypeScreen />;

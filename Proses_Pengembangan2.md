@@ -7,13 +7,19 @@
 - ss minimal Sketch up > sudah ada halamannya
 
 1. Rizki Aidil Fazri = Halaman Admin
+<img width="1857" height="636" alt="image" src="https://github.com/user-attachments/assets/97e66ec8-81ea-4d5c-b77a-ea3ffacd44e6" />
 
-![alt text](image-2.png)
 
-2. Nur Khotimah = 
-<img width="882" height="696" alt="Screenshot 2026-10-08 100250" src="https://github.com/user-attachments/assets/24bcf9b4-1eac-4d87-bc86-f0eb23bcadd0" />
+2. Nurkhotimah = 
+<img width="430" height="349" alt="image" src="https://github.com/user-attachments/assets/8fbbcf5b-e655-404d-8c6f-26ef792e1dcb" />
+
+
+3. Pasya & Hilal = Halaman Pelanggan (User)
+<img width="1839" height="439" alt="image" src="https://github.com/user-attachments/assets/15d53810-6d8e-496b-b5e1-c4268320e75b" />
+
 
 
 ### Rancangan Antarmuka
 
-![Rancangan antarmuka aplikasi Nasi Bakar](assets/rancangan-antarmuka-nasi-bakar.png)
+<img width="1565" height="752" alt="image" src="https://github.com/user-attachments/assets/8a9a1e7e-93e5-4170-adae-e0740fcbe7bf" />
+
