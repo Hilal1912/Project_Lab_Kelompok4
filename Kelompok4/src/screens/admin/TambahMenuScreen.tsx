@@ -14,13 +14,21 @@ export default function TambahMenuScreen() {
   const [kategori, setKategori] = useState<'Produk' | 'Minuman'>('Produk');
   const [errors, setErrors] = useState<{ nama?: string; harga?: string }>({});
 
+  const validateNama = (value: string) => (
+    value.trim() ? '' : 'Nama menu wajib diisi'
+  );
+
+  const validateHarga = (value: string) => {
+    if (!value.trim()) return 'Harga wajib diisi';
+    return Number.isFinite(Number(value)) && Number(value) > 0
+      ? ''
+      : 'Harga harus berupa angka lebih dari 0';
+  };
+
   const validate = () => {
-    const e: { nama?: string; harga?: string } = {};
-    if (!nama.trim()) e.nama = 'Nama menu wajib diisi';
-    if (!harga.trim()) e.harga = 'Harga wajib diisi';
-    else if (!Number.isFinite(Number(harga)) || Number(harga) <= 0) e.harga = 'Harga harus berupa angka lebih dari 0';
+    const e = { nama: validateNama(nama), harga: validateHarga(harga) };
     setErrors(e);
-    return Object.keys(e).length === 0;
+    return !e.nama && !e.harga;
   };
 
   const handleSimpan = () => {
@@ -59,7 +67,7 @@ export default function TambahMenuScreen() {
           placeholder="Contoh: Nasi Bakar Ayam"
           placeholderTextColor="#9E9E9E"
           value={nama}
-          onChangeText={(t) => { setNama(t); setErrors((e) => ({ ...e, nama: undefined })); }}
+          onChangeText={(t) => { setNama(t); setErrors((e) => ({ ...e, nama: validateNama(t) })); }}
         />
         {errors.nama && <Text className="text-xs text-red-500 mb-3">{errors.nama}</Text>}
 
@@ -70,7 +78,7 @@ export default function TambahMenuScreen() {
           placeholder="Contoh: 15000"
           placeholderTextColor="#9E9E9E"
           value={harga}
-          onChangeText={(t) => { setHarga(t); setErrors((e) => ({ ...e, harga: undefined })); }}
+          onChangeText={(t) => { setHarga(t); setErrors((e) => ({ ...e, harga: validateHarga(t) })); }}
           keyboardType="numeric"
         />
         {errors.harga && <Text className="text-xs text-red-500 mb-3">{errors.harga}</Text>}
