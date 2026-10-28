@@ -1,158 +1,270 @@
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, TextInput, ScrollView, Modal } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useCart } from '@/context/cart-context';
-
-const paymentMethods = ['Cash', 'Transfer Bank', 'QRIS'];
 
 export default function CheckoutScreen() {
   const router = useRouter();
-  const { items, orderType, subtotal, note, placeOrder } = useCart();
-  const [paymentMethod, setPaymentMethod] = useState('Cash');
-  const deliveryFee = orderType === 'Delivery' ? 20000 : 0;
-  const total = subtotal + deliveryFee;
+  
+  // State untuk menyimpan pilihan user
+  const [alamat, setAlamat] = useState<string | null>(null);
+  const [metodeBayar, setMetodeBayar] = useState<string | null>(null);
+  
+  // State untuk interaksi
+  const [isSubmitAttempted, setIsSubmitAttempted] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  const submitOrder = () => {
-    const order = placeOrder(paymentMethod);
-    if (!order) {
-      router.replace('/menu');
+  const subtotal = 20000;
+  const ongkir = 0;
+  const total = subtotal + ongkir;
+
+  // Logika saat tombol Buat Pesanan ditekan
+  const handleBuatPesanan = () => {
+    setIsSubmitAttempted(true);
+    
+    // Jika belum pilih alamat atau metode pembayaran, hentikan proses (munculkan error merah)
+    if (!alamat || !metodeBayar) {
       return;
     }
-    router.replace('/orders');
+    
+    // Jika sudah lengkap, munculkan Pop-up Konfirmasi
+    setShowConfirmModal(true);
   };
 
-  if (items.length === 0 || orderType === null) {
-    return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-orange-50 px-6">
-        <Feather name="shopping-cart" size={36} color="#6b7280" />
-        <Text className="mt-4 text-center text-base text-zinc-900">
-          Keranjang kosong atau jenis order belum dipilih.
-        </Text>
-        <TouchableOpacity
-          className="mt-6 rounded-lg bg-green-800 px-6 py-3"
-          onPress={() => router.replace('/menu')}>
-          <Text className="font-semibold text-white">Pilih Menu</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    );
-  }
+  // Fungsi simulasi pilih alamat
+  const handlePilihAlamat = () => {
+    setAlamat("Jl. Melati No. 12, Kec. Harjamukti, Kota Cirebon");
+  };
 
   return (
-    <SafeAreaView className="flex-1 bg-orange-50">
-      <View className="h-16 flex-row items-center gap-4 px-6">
-        <TouchableOpacity
-          accessibilityLabel="Kembali ke jenis order"
-          className="h-8 w-8 justify-center"
-          onPress={() => router.push('/order-type')}>
-          <Feather name="arrow-left" size={24} color="#18181b" />
+    <SafeAreaView className="flex-1 bg-[#FAF8F1]">
+      <View className="flex-row justify-between items-center px-6 py-4">
+        <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2">
+          <Feather name="arrow-left" size={24} color="#19231F" />
         </TouchableOpacity>
-        <Text className="text-xl font-semibold text-zinc-900">Checkout</Text>
+        <Text className="text-[#19231F] text-[22px] font-semibold">Checkout</Text>
+        <TouchableOpacity className="p-2 -mr-2">
+          <Feather name="shopping-cart" size={24} color="#79828A" />
+        </TouchableOpacity>
       </View>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        className="flex-1 px-6 pt-3"
-        contentContainerStyle={{ paddingBottom: 24 }}>
-        <View className="flex-col gap-4 rounded-xl border border-neutral-200 bg-white/60 p-4">
-          <Text className="text-base font-semibold text-zinc-900">Detail Pesanan</Text>
-          {items.map((item) => (
-            <View key={item.id} className="flex-row justify-between gap-4">
-              <Text className="flex-1 text-sm text-gray-600">
-                {item.name} x{item.quantity}
-              </Text>
-              <Text className="text-sm text-gray-600">
-                Rp {(item.price * item.quantity).toLocaleString('id-ID')}
-              </Text>
-            </View>
-          ))}
-          {note ? (
-            <Text className="text-sm text-gray-600">Catatan: {note}</Text>
-          ) : null}
 
-          <View className="flex-col gap-2.5 border-b border-t border-neutral-200 py-4">
-            <View className="flex-row justify-between">
-              <Text className="text-sm text-black">Subtotal</Text>
-              <Text className="text-sm text-green-800">Rp {subtotal.toLocaleString('id-ID')}</Text>
+      <ScrollView className="flex-1 px-6 pt-2" showsVerticalScrollIndicator={false}>
+        
+        {/* Banner Error (Muncul jika tombol ditekan tapi data belum lengkap) */}
+        {isSubmitAttempted && (!alamat || !metodeBayar) && (
+          <View className="bg-[#FBECEE] rounded-lg p-3 flex-row items-start space-x-2.5 mb-4">
+            <View className="mt-0.5">
+              <Feather name="alert-circle" size={18} color="#CB4E57" />
             </View>
-            <View className="flex-row justify-between">
-              <Text className="text-sm text-black">Ongkir</Text>
-              <Text className="text-sm text-green-800">Rp {deliveryFee.toLocaleString('id-ID')}</Text>
+            <View className="flex-1 ml-2">
+              <Text className="text-[#CB4E57] text-[14px] font-semibold">Lengkapi data pesanan</Text>
+              <Text className="text-[#79828A] text-[12px] mt-1 leading-4">
+                Pilih alamat dan metode pembayaran, lalu tekan Buat Pesanan kembali.
+              </Text>
+            </View>
+          </View>
+        )}
+
+        <View className="bg-white/50 border border-[#E1E4E1] rounded-xl p-4 mb-6">
+          <Text className="text-[#19231F] text-[17px] font-semibold mb-3">Detail Pesanan</Text>
+          
+          <View className="space-y-3">
+            <View className="flex-row items-center">
+              <Text className="text-[#79828A] text-[13px] w-6">1×</Text>
+              <Text className="flex-1 text-[#19231F] text-[13px]">Nasi Bakar Ayam</Text>
+              <Text className="text-[#19231F] text-[13px]">Rp 15.000</Text>
+            </View>
+            <View className="flex-row items-center mt-2 mb-3">
+              <Text className="text-[#79828A] text-[13px] w-6">1×</Text>
+              <Text className="flex-1 text-[#19231F] text-[13px]">Es Teh Manis</Text>
+              <Text className="text-[#19231F] text-[13px]">Rp 5.000</Text>
             </View>
           </View>
 
-          <Text className="text-base font-semibold text-zinc-900">Jenis Order</Text>
-          <TouchableOpacity
-            className="flex-row items-center gap-3"
-            onPress={() => router.push('/order-type')}>
-            <Feather
-              name={orderType === 'Delivery' ? 'truck' : orderType === 'Dine-in' ? 'coffee' : 'shopping-bag'}
-              size={20}
-              color="#166534"
-            />
-            <Text className="flex-1 text-base text-black">{orderType}</Text>
-            <Text className="rounded-[10px] bg-green-100 px-3 py-1 text-xs font-medium text-green-800">
-              Ubah
-            </Text>
-          </TouchableOpacity>
+          <View className="h-[1px] bg-[#E1E4E1] w-full mb-3" />
+          
+          <View className="flex-row justify-between mb-2">
+            <Text className="text-[#19231F] text-[14px]">Subtotal</Text>
+            <Text className="text-[#19231F] text-[14px]">Rp {subtotal.toLocaleString('id-ID')}</Text>
+          </View>
+          <View className="flex-row justify-between mb-3">
+            <Text className="text-[#19231F] text-[14px]">Ongkir</Text>
+            <Text className="text-[#19231F] text-[14px]">Rp {ongkir}</Text>
+          </View>
 
-          {orderType === 'Delivery' ? (
-            <>
-              <Text className="mt-2 text-base font-semibold text-zinc-900">Alamat Pengiriman</Text>
-              <View className="flex-row items-start gap-3 rounded-lg bg-stone-100 p-3.5">
-                <Feather name="map-pin" size={18} color="#166534" />
-                <View className="flex-1">
-                  <Text className="text-sm font-medium text-zinc-900">Rumah</Text>
-                  <Text className="text-xs leading-4 text-gray-500">
-                    Jl. Melati No. 12, Kec. Harjamukti, Kota Cirebon
-                  </Text>
-                </View>
+          <View className="h-[1px] bg-[#E1E4E1] w-full mb-3" />
+
+          {/* Jenis Order */}
+          <Text className="text-[#19231F] text-[15px] font-semibold mb-3">Jenis Order</Text>
+          <View className="flex-row items-center justify-between mb-4">
+            <View className="flex-row items-center space-x-3">
+              <Feather name="truck" size={20} color="#155A3D" />
+              <Text className="text-[#19231F] text-[16px] ml-3">Delivery</Text>
+            </View>
+            <TouchableOpacity className="bg-[#DFF1DE] px-2 py-1 rounded-md">
+              <Text className="text-[#155A3D] text-[11px] font-medium">Ubah</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Alamat Pengiriman */}
+          <View className="mb-4">
+            <Text className="text-[#19231F] text-[15px] font-semibold mb-2">Alamat Pengiriman</Text>
+            <TouchableOpacity 
+              onPress={handlePilihAlamat}
+              className={`min-h-[48px] rounded-lg p-3 flex-row items-center border ${
+                isSubmitAttempted && !alamat ? 'bg-white/70 border-[#CB4E57]' : alamat ? 'bg-[#F3F6EE] border-[#E1E4E1]' : 'bg-white/70 border-[#E1E4E1]'
+              }`}
+            >
+              <Feather name="map-pin" size={18} color="#155A3D" />
+              <View className="flex-1 ml-3">
+                {alamat ? (
+                  <>
+                    <Text className="text-[#19231F] text-[14px] font-semibold">Nurkhotimah · Rumah</Text>
+                    <Text className="text-[#79828A] text-[13px] leading-5 mt-1">{alamat}</Text>
+                  </>
+                ) : (
+                  <Text className="text-[#79828A] text-[14px]">Pilih alamat pengiriman</Text>
+                )}
               </View>
-              <TextInput
-                className="min-h-14 rounded-md border border-neutral-200 bg-white p-3 text-sm text-zinc-900"
-                placeholder="Catatan untuk kurir (opsional)"
-                placeholderTextColor="#6b7280"
-                multiline
-                textAlignVertical="top"
-              />
-            </>
-          ) : null}
-
-          <Text className="mt-2 text-base font-semibold text-zinc-900">Metode Pembayaran</Text>
-          <View className="flex-row justify-between">
-            {paymentMethods.map((method) => {
-              const selected = paymentMethod === method;
-              return (
-                <TouchableOpacity
-                  key={method}
-                  className="flex-row items-center gap-1.5"
-                  onPress={() => setPaymentMethod(method)}>
-                  <Feather
-                    name={selected ? 'check-circle' : 'circle'}
-                    size={16}
-                    color={selected ? '#166534' : '#6b7280'}
-                  />
-                  <Text className={`text-xs ${selected ? 'font-medium text-green-800' : 'text-gray-500'}`}>
-                    {method}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+              {!alamat && <Feather name="chevron-right" size={18} color="#79828A" />}
+            </TouchableOpacity>
+            {isSubmitAttempted && !alamat && (
+              <Text className="text-[#CB4E57] text-[12px] mt-1.5">Pilih alamat pengiriman terlebih dahulu</Text>
+            )}
           </View>
 
-          <View className="mt-4 flex-row items-center justify-between">
-            <Text className="text-base text-black">Total</Text>
-            <Text className="text-lg font-semibold text-green-800">
-              Rp {total.toLocaleString('id-ID')}
-            </Text>
+          {/* Catatan Kurir */}
+          <View className="mb-4">
+            <Text className="text-[#19231F] text-[15px] mb-2">Catatan untuk Kurir (opsional)</Text>
+            <TextInput
+              className="w-full min-h-[64px] bg-white/70 border border-[#E1E4E1] rounded-lg p-3 text-[13px]"
+              placeholder="Contoh: depan warung, pintu warna biru."
+              placeholderTextColor="#79828A"
+              multiline
+              textAlignVertical="top"
+            />
           </View>
-          <TouchableOpacity
-            className="mt-2 h-14 w-full items-center justify-center rounded-lg bg-green-800 active:bg-green-900"
-            onPress={submitOrder}>
-            <Text className="text-lg font-semibold text-white">Buat Pesanan</Text>
-          </TouchableOpacity>
+
+          {/* Metode Pembayaran */}
+          <View className="mb-3">
+            <Text className="text-[#19231F] text-[15px] font-semibold mb-2">Metode Pembayaran</Text>
+            <View className={`border rounded-lg p-2.5 ${isSubmitAttempted && !metodeBayar ? 'border-[#CB4E57]' : 'border-[#E1E4E1] bg-white/50'}`}>
+              <View className="flex-row justify-between">
+                {['Cash', 'Transfer Bank', 'QRIS'].map((method) => (
+                  <TouchableOpacity 
+                    key={method} 
+                    onPress={() => setMetodeBayar(method)}
+                    className="flex-row items-center space-x-2"
+                  >
+                    <View className={`w-4 h-4 rounded-full border items-center justify-center ${metodeBayar === method ? 'border-[#155A3D]' : 'border-[#79828A]'}`}>
+                      {metodeBayar === method && <View className="w-2 h-2 rounded-full bg-[#155A3D]" />}
+                    </View>
+                    <Text className="text-[#79828A] text-[12px] ml-1">{method}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+            {isSubmitAttempted && !metodeBayar && (
+              <Text className="text-[#CB4E57] text-[12px] mt-1.5">Pilih metode pembayaran</Text>
+            )}
+            {metodeBayar === 'Cash' && (
+              <Text className="text-[#79828A] text-[12px] mt-1.5">Cash · bayar saat diterima</Text>
+            )}
+          </View>
         </View>
+
+        <View className="h-4" />
       </ScrollView>
+
+      {/* Footer Bawah */}
+      <View className="px-6 py-4 bg-[#FAF8F1] border-t border-[#E1E4E1]/50">
+        <View className="flex-row justify-between items-center mb-4">
+          <Text className="text-[#19231F] text-[17px] font-semibold">Total</Text>
+          <Text className="text-[#155A3D] text-[20px] font-semibold">
+            Rp {total.toLocaleString('id-ID')}
+          </Text>
+        </View>
+        
+        <TouchableOpacity 
+          className="w-full h-[60px] bg-[#155A3D] rounded-lg justify-center items-center active:bg-green-900"
+          onPress={handleBuatPesanan}
+        >
+          <Text className="text-white text-[17px] font-semibold">Buat Pesanan</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* MODAL KONFIRMASI BUAT PESANAN */}
+      <Modal transparent visible={showConfirmModal} animationType="fade">
+        <View className="flex-1 bg-[#08130D]/40 justify-center items-center px-6">
+          <View className="w-full bg-[#FAF8F1] rounded-xl p-5 border border-[#E1E4E1]">
+            <View className="w-11 h-11 bg-[#DFF1DE] rounded-xl border border-[#155A3D]/20 justify-center items-center mb-4">
+              <Feather name="check-square" size={24} color="#155A3D" />
+            </View>
+            
+            <Text className="text-[#19231F] text-[20px] font-semibold mb-1">Buat pesanan sekarang?</Text>
+            <Text className="text-[#79828A] text-[13px] leading-5 mb-5">
+              Pastikan rincian pesanan dan alamat pengiriman sudah benar.
+            </Text>
+
+            <View className="space-y-2 mb-3">
+              <View className="flex-row">
+                <Text className="text-[#79828A] text-[13px] w-6">1×</Text>
+                <Text className="flex-1 text-[#19231F] text-[13px]">Nasi Bakar Ayam</Text>
+                <Text className="text-[#19231F] text-[13px]">Rp 15.000</Text>
+              </View>
+              <View className="flex-row mt-1">
+                <Text className="text-[#79828A] text-[13px] w-6">1×</Text>
+                <Text className="flex-1 text-[#19231F] text-[13px]">Es Teh Manis</Text>
+                <Text className="text-[#19231F] text-[13px]">Rp 5.000</Text>
+              </View>
+            </View>
+            
+            <View className="h-[1px] bg-[#E1E4E1] w-full mb-3" />
+            
+            <View className="mb-3">
+              <View className="flex-row justify-between mb-1">
+                <Text className="text-[#19231F] text-[14px]">Jenis order</Text>
+                <Text className="text-[#19231F] text-[14px]">Delivery</Text>
+              </View>
+              <Text className="text-[#19231F] text-[14px] font-semibold mt-1">Nurkhotimah</Text>
+              <Text className="text-[#79828A] text-[13px] leading-5 mt-0.5">{alamat}</Text>
+            </View>
+
+            <View className="flex-row justify-between mb-1 mt-2">
+              <Text className="text-[#19231F] text-[14px]">Pembayaran</Text>
+              <Text className="text-[#19231F] text-[14px]">{metodeBayar}</Text>
+            </View>
+            <Text className="text-[#79828A] text-[12px]">Bayar saat pesanan diterima.</Text>
+
+            <View className="h-[1px] bg-[#E1E4E1] w-full my-3" />
+
+            <View className="flex-row justify-between mb-4">
+              <Text className="text-[#19231F] text-[17px] font-semibold">Total</Text>
+              <Text className="text-[#155A3D] text-[20px] font-semibold">Rp {total.toLocaleString('id-ID')}</Text>
+            </View>
+            
+            <TouchableOpacity 
+              className="w-full h-12 bg-[#155A3D] rounded-lg justify-center items-center mb-3"
+              // Arahkan ke rute Pesanan Berhasil
+              onPress={() => {
+                setShowConfirmModal(false);
+                router.push('/pesanan-berhasil');
+              }}
+            >
+              <Text className="text-white text-[15px] font-semibold">Ya, Buat Pesanan</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              className="w-full h-12 bg-white/70 border border-[#E1E4E1] rounded-lg justify-center items-center"
+              onPress={() => setShowConfirmModal(false)}
+            >
+              <Text className="text-[#155A3D] text-[15px] font-semibold">Kembali</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }

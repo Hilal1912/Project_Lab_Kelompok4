@@ -88,23 +88,32 @@ export default function HomeScreen() {
 
         <View className="flex-row gap-4 pb-4">
           {recommended.map((product) => (
-            <TouchableOpacity
-              key={product.id}
-              accessibilityRole="button"
-              className="flex-1 flex-col gap-3"
-              onPress={() => addItem(product)}>
-              <Image
-                source={product.image}
-                className="h-36 w-full rounded-xl"
-                resizeMode="cover"
-              />
-              <View>
-                <Text className="mb-1 text-base text-zinc-900">{product.name}</Text>
-                <Text className="text-base font-semibold text-zinc-900">
-                  Rp {product.price.toLocaleString('id-ID')} · Tambah
-                </Text>
-              </View>
-            </TouchableOpacity>
+            <View key={product.id} className="flex-1 gap-3">
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel={`Lihat detail ${product.name}`}
+                className="flex-col gap-3"
+                onPress={() => router.push({ pathname: '/detail-menu', params: { id: product.id } })}>
+                <Image
+                  source={product.image}
+                  className="h-36 w-full rounded-xl"
+                  resizeMode="cover"
+                />
+                <View>
+                  <Text className="mb-1 text-base text-zinc-900">{product.name}</Text>
+                  <Text className="text-base font-semibold text-zinc-900">
+                    Rp {product.price.toLocaleString('id-ID')}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel={`Tambah ${product.name} ke keranjang`}
+                className="items-center rounded-lg bg-green-800 py-2"
+                onPress={() => addItem(product)}>
+                <Text className="font-semibold text-white">Tambah</Text>
+              </TouchableOpacity>
+            </View>
           ))}
         </View>
       </ScrollView>

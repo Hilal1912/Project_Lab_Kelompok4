@@ -84,22 +84,28 @@ export default function DaftarMenuScreen() {
               <View
                 key={product.id}
                 className="flex-row items-center gap-4 border-b border-neutral-200 py-3">
-                <Image
-                  source={product.image}
-                  className="h-24 w-24 rounded-[10px]"
-                  resizeMode="cover"
-                />
-                <View className="flex-1 flex-col gap-1.5">
-                  <Text className="text-base leading-6 text-zinc-900">{product.name}</Text>
-                  <Text className="text-base font-medium leading-5 text-zinc-900">
-                    Rp {product.price.toLocaleString('id-ID')}
-                  </Text>
-                  <View className="flex-row">
-                    <View className="rounded-[10px] bg-green-100 px-2 py-1">
-                      <Text className="text-[10px] font-medium text-green-800">Tersedia</Text>
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel={`Lihat detail ${product.name}`}
+                  className="flex-1 flex-row items-center gap-4"
+                  onPress={() => router.push({ pathname: '/detail-menu', params: { id: product.id } })}>
+                  <Image
+                    source={product.image}
+                    className="h-24 w-24 rounded-[10px]"
+                    resizeMode="cover"
+                  />
+                  <View className="flex-1 flex-col gap-1.5">
+                    <Text className="text-base leading-6 text-zinc-900">{product.name}</Text>
+                    <Text className="text-base font-medium leading-5 text-zinc-900">
+                      Rp {product.price.toLocaleString('id-ID')}
+                    </Text>
+                    <View className="flex-row">
+                      <View className="rounded-[10px] bg-green-100 px-2 py-1">
+                        <Text className="text-[10px] font-medium text-green-800">Tersedia</Text>
+                      </View>
                     </View>
                   </View>
-                </View>
+                </TouchableOpacity>
                 <TouchableOpacity
                   accessibilityLabel={`Tambah ${product.name} ke keranjang`}
                   className="rounded-lg bg-green-800 p-2"
