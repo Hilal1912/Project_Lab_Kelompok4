@@ -13,6 +13,7 @@
 - Tombol login kurir membuka form login kurir dan tidak langsung melewati form.
 - Nama aplikasi pada konfigurasi Expo sudah diubah menjadi **NasbakPintar**.
 - Pemeriksaan lint, TypeScript, konfigurasi Expo, dan bundling Android berhasil.
+- Video demo dengan expo go: [Tonton Expo go demo perbaikan.mp4](./Kelompok4/assets/Expo go demo perbaikan.mp4). ![alt text](<Expo go demo perbaikan.gif>)
 - Video demo: [Tonton Demo_Perbaikan.mp4](./Kelompok4/assets/Demo_Perbaikan.mp4).
 
 **Catatan:** Login/registrasi belum terhubung ke backend autentikasi. Validasi format input tidak memverifikasi apakah akun dan kata sandi benar.
