@@ -7,11 +7,38 @@ import ScreenWrapper from '@/components/layout/ScreenWrapper';
 const LoginKurir = () => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState<{ phone?: string; password?: string }>({});
   const router = useRouter();
 
+  const validatePhone = (value: string) => {
+    if (!value.trim()) return 'No. HP wajib diisi';
+    const digits = value.replace(/\D/g, '');
+    return digits.length >= 8 && digits.length <= 15 ? '' : 'Masukkan nomor HP yang valid';
+  };
+
+  const validatePassword = (value: string) => (
+    value.trim() ? '' : 'Password wajib diisi'
+  );
+
   const handleLogin = () => {
-    // Logika autentikasi Kurir
+    const nextErrors = {
+      phone: validatePhone(phone),
+      password: validatePassword(password),
+    };
+    setErrors(nextErrors);
+    if (nextErrors.phone || nextErrors.password) return;
+
     router.replace('/pesanan-kurir');
+  };
+
+  const handlePhoneChange = (value: string) => {
+    setPhone(value);
+    setErrors((current) => ({ ...current, phone: validatePhone(value) }));
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    setErrors((current) => ({ ...current, password: validatePassword(value) }));
   };
 
   return (
@@ -31,23 +58,25 @@ const LoginKurir = () => {
           <View>
             <Text className="text-sm font-medium text-gray-700 mb-1">No. HP</Text>
             <TextInput
-              className="bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-800"
+              className={`bg-white border rounded-xl px-4 py-3 text-gray-800 ${errors.phone ? 'border-red-500' : 'border-gray-200'}`}
               placeholder="Masukkan nomor HP"
               value={phone}
-              onChangeText={setPhone}
+              onChangeText={handlePhoneChange}
               keyboardType="phone-pad"
             />
+            {!!errors.phone && <Text className="text-red-600 text-xs mt-1">{errors.phone}</Text>}
           </View>
 
           <View>
             <Text className="text-sm font-medium text-gray-700 mb-1">Password</Text>
             <TextInput
-              className="bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-800"
+              className={`bg-white border rounded-xl px-4 py-3 text-gray-800 ${errors.password ? 'border-red-500' : 'border-gray-200'}`}
               placeholder="Masukkan password"
               secureTextEntry
               value={password}
-              onChangeText={setPassword}
+              onChangeText={handlePasswordChange}
             />
+            {!!errors.password && <Text className="text-red-600 text-xs mt-1">{errors.password}</Text>}
           </View>
 
           <TouchableOpacity

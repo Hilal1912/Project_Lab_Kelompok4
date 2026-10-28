@@ -18,9 +18,9 @@ export default function RegisterScreen() {
   // Fungsi validasi per field
   const rules: Record<string, (v: string) => string> = {
     nama: (v) => !v.trim() ? 'Nama lengkap wajib diisi' : '',
-    noHp: (v) => !v.trim() ? 'No. HP wajib diisi' : !/^[0-9]{8,13}$/.test(v.replace(/\s/g, '')) ? 'No. HP tidak valid (8-13 angka)' : '',
-    email: (v) => !v.trim() ? 'Email wajib diisi' : !/\S+@\S+\.\S+/.test(v) ? 'Format email tidak valid' : '',
-    password: (v) => !v.trim() ? 'Password wajib diisi' : v.length < 6 ? 'Password minimal 6 karakter' : '',
+    noHp: (v) => !v.trim() ? 'No. HP wajib diisi' : !/^\+?\d{8,15}$/.test(v.replace(/[\s()-]/g, '')) ? 'No. HP tidak valid (8-15 angka)' : '',
+    email: (v) => !v.trim() ? 'Email wajib diisi' : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? 'Format email tidak valid' : '',
+    password: (v) => !v.trim() ? 'Password wajib diisi' : v.length < 8 ? 'Password minimal 8 karakter' : '',
     konfirmasi: (v) => !v.trim() ? 'Konfirmasi password wajib diisi' : '',
   };
 

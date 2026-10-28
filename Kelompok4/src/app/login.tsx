@@ -14,6 +14,11 @@ export default function LoginScreen() {
   // Validasi realtime — dipanggil setiap kali field berubah
   const validateEmail = (val: string) => {
     if (!val.trim()) return 'Email / No. HP wajib diisi';
+    const value = val.trim();
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+    const phoneDigits = value.replace(/\D/g, '');
+    const isPhone = /^[+\d\s()-]+$/.test(value) && phoneDigits.length >= 8 && phoneDigits.length <= 15;
+    if (!isEmail && !isPhone) return 'Masukkan email atau nomor HP yang valid';
     return '';
   };
 
@@ -34,11 +39,11 @@ export default function LoginScreen() {
 
   const isValid = () => !validateEmail(email) && !validatePassword(password);
 
-  const handleLogin = (destination: string) => {
+  const handleLogin = () => {
     // Trigger semua validasi sekaligus
     setErrors({ email: validateEmail(email), password: validatePassword(password) });
     if (!isValid()) return;
-    router.replace(destination as any);
+    router.replace('/home');
   };
 
   return (
@@ -101,7 +106,7 @@ export default function LoginScreen() {
 
               <TouchableOpacity
                 className="w-full h-14 bg-green-800 rounded-lg justify-center items-center mt-6 active:bg-green-900"
-                onPress={() => handleLogin('/home')}
+                onPress={handleLogin}
               >
                 <Text className="text-white text-lg font-semibold">Masuk sebagai Pelanggan</Text>
               </TouchableOpacity>
@@ -117,7 +122,7 @@ export default function LoginScreen() {
 
               <TouchableOpacity
                 className="w-full h-12 rounded-lg border border-neutral-300 bg-white/70 justify-center items-center mt-3"
-                onPress={() => router.push('/pesanan-kurir')}
+                onPress={() => router.push('/login-kurir')}
               >
                 <Text className="text-zinc-800 text-base font-semibold">Login sebagai Kurir</Text>
               </TouchableOpacity>
