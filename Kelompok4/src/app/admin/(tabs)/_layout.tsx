@@ -31,14 +31,14 @@ export default function AdminTabsLayout() {
         name="menu"
         options={{
           title: 'Menu',
-          tabBarIcon: ({ color, size }) => <Ionicons name="restaurant-outline" size={size} color={typeof color === 'string' ? color : '#9E9E9E'} />,
+          tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline" size={size} color={typeof color === 'string' ? color : '#9E9E9E'} />,
         }}
       />
       <Tabs.Screen
         name="pesanan"
         options={{
           title: 'Pesanan',
-          tabBarIcon: ({ color, size }) => <Ionicons name="receipt-outline" size={size} color={typeof color === 'string' ? color : '#9E9E9E'} />,
+          tabBarIcon: ({ color, size }) => <Ionicons name="clipboard-outline" size={size} color={typeof color === 'string' ? color : '#9E9E9E'} />,
         }}
       />
       <Tabs.Screen
