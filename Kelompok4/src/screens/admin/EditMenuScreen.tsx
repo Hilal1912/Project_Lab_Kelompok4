@@ -3,43 +3,33 @@ import { View, Text, Image, TextInput, TouchableOpacity, StyleSheet, Alert } fro
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import ScreenWrapper from '../../components/layout/ScreenWrapper';
-import BadgeStatus from '../../components/ui/BadgeStatus';
-import { useMenu } from '../../context/menu-context';
+import { menuData } from '../../data/menuData';
 import { formatRupiah } from '../../utils/formatRupiah';
 import { COLORS, SPACING } from '../../utils/constants';
 
 export default function EditMenuScreen() {
   const router = useRouter();
   const { id, field } = useLocalSearchParams<{ id: string; field: string }>();
-  const { menu, updateMenu } = useMenu();
-  const item = menu.find((m) => m.id === id) ?? menu[0];
+  const item = menuData.find((m) => m.id === id) ?? menuData[0];
   const isNama = field === 'nama';
   const [value, setValue] = useState(isNama ? item.nama : String(item.harga));
 
   const handleSimpan = () => {
     if (!value.trim()) { Alert.alert('Error', 'Field tidak boleh kosong'); return; }
-    if (!isNama && (!Number.isFinite(Number(value)) || Number(value) <= 0)) {
-      Alert.alert('Error', 'Harga harus berupa angka lebih dari 0');
-      return;
-    }
-    updateMenu(item.id, isNama ? { nama: value.trim() } : { harga: Number(value) });
-    if (router.canGoBack()) router.back();
-    else router.replace({ pathname: '/admin/detail-menu', params: { id: item.id } });
-  };
-
-  const goBack = () => {
-    if (router.canGoBack()) router.back();
-    else router.replace({ pathname: '/admin/detail-menu', params: { id: item.id } });
+    Alert.alert('Berhasil', `${isNama ? 'Nama' : 'Harga'} berhasil diperbarui!`, [
+      { text: 'OK', onPress: () => router.back() },
+    ]);
   };
 
   return (
     <ScreenWrapper>
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={goBack}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={22} color="#19231F" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{isNama ? 'Edit Nama Produk' : 'Edit Harga Produk'}</Text>
-        <View style={{ width: 24 }} />
+        <View style={{ width: 22 }} />
       </View>
 
       {/* Info Menu */}
@@ -48,11 +38,11 @@ export default function EditMenuScreen() {
         <View style={styles.menuInfo}>
           <Text style={styles.menuNama}>{item.nama}</Text>
           <Text style={styles.menuHarga}>{formatRupiah(item.harga)}</Text>
-          <BadgeStatus status={item.kategori} />
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{item.kategori}</Text>
+          </View>
         </View>
       </View>
-
-      <View style={{ height: 24 }} />
 
       {/* Form */}
       <View style={styles.formWrap}>
@@ -65,7 +55,7 @@ export default function EditMenuScreen() {
             keyboardType={isNama ? 'default' : 'numeric'}
             autoFocus
           />
-          <Ionicons name="pencil-outline" size={18} color={COLORS.textMuted} />
+          <Ionicons name="pencil-outline" size={18} color="#79828A" />
         </View>
         <Text style={styles.hint}>
           {isNama ? 'Nama ini akan ditampilkan pada daftar menu.' : 'Harga ini akan ditampilkan pada daftar menu.'}
@@ -74,7 +64,8 @@ export default function EditMenuScreen() {
         <TouchableOpacity style={styles.btnSimpan} onPress={handleSimpan} activeOpacity={0.85}>
           <Text style={styles.btnSimpanText}>Simpan Perubahan</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.btnBatal} onPress={goBack} activeOpacity={0.85}>
+
+        <TouchableOpacity style={styles.btnBatal} onPress={() => router.back()} activeOpacity={0.85}>
           <Text style={styles.btnBatalText}>Batal</Text>
         </TouchableOpacity>
       </View>
@@ -83,20 +74,64 @@ export default function EditMenuScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.md, paddingVertical: SPACING.md },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: COLORS.textPrimary },
-  menuRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderBottomWidth: 1, borderBottomColor: '#EDE8DE' },
-  menuImage: { width: 72, height: 72, borderRadius: 10, marginRight: 12, backgroundColor: '#E0DAD0' },
-  menuInfo: { flex: 1, gap: 4 },
-  menuNama: { fontSize: 15, fontWeight: '600', color: COLORS.textPrimary },
-  menuHarga: { fontSize: 13, color: COLORS.textSecondary },
-  formWrap: { paddingHorizontal: SPACING.md },
-  label: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 10 },
-  inputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.white, borderWidth: 1.5, borderColor: COLORS.primary, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, marginBottom: 8 },
-  input: { flex: 1, fontSize: 15, color: COLORS.textPrimary },
-  hint: { fontSize: 12, color: COLORS.textMuted, marginBottom: 24 },
-  btnSimpan: { backgroundColor: COLORS.primary, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
-  btnSimpanText: { color: COLORS.white, fontWeight: '700', fontSize: 16 },
-  btnBatal: { backgroundColor: COLORS.white, borderRadius: 12, paddingVertical: 16, alignItems: 'center', borderWidth: 1.5, borderColor: COLORS.border },
-  btnBatalText: { color: COLORS.primary, fontWeight: '700', fontSize: 16 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.lg,
+    height: 62,
+  },
+  headerTitle: { fontSize: 22, fontWeight: '600', color: '#19231F' },
+  menuRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingHorizontal: SPACING.lg,
+    paddingTop: 12,
+    paddingBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E1E4E1',
+    gap: 18,
+  },
+  menuImage: { width: 94, height: 98, borderRadius: 10, backgroundColor: '#E0DAD0' },
+  menuInfo: { flex: 1, gap: 9 },
+  menuNama: { fontSize: 16, fontWeight: '400', color: '#19231F', lineHeight: 23.2 },
+  menuHarga: { fontSize: 15, fontWeight: '400', color: '#19231F', lineHeight: 21.75 },
+  badge: { paddingHorizontal: 8, paddingVertical: 3, backgroundColor: '#DFF1DE', borderRadius: 10, alignSelf: 'flex-start' },
+  badgeText: { color: '#155A3D', fontSize: 11, fontWeight: '500' },
+  formWrap: {
+    paddingHorizontal: SPACING.lg,
+    paddingTop: 32,
+    gap: 8,
+  },
+  label: { fontSize: 16, fontWeight: '500', color: '#19231F' },
+  inputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.69)',
+    borderWidth: 1,
+    borderColor: '#155A3D',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 52,
+    gap: 12,
+  },
+  input: { flex: 1, fontSize: 16, fontWeight: '400', color: '#19231F' },
+  hint: { fontSize: 14, fontWeight: '400', color: '#79828A', lineHeight: 20.3, marginBottom: 16 },
+  btnSimpan: {
+    backgroundColor: '#155A3D',
+    borderRadius: 8,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  btnSimpanText: { color: 'white', fontWeight: '600', fontSize: 14 },
+  btnBatal: {
+    borderRadius: 8,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E1E4E1',
+  },
+  btnBatalText: { color: '#155A3D', fontWeight: '600', fontSize: 14 },
 });

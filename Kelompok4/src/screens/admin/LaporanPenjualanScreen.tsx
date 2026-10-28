@@ -5,42 +5,62 @@ import ScreenWrapper from '../../components/layout/ScreenWrapper';
 import { formatRupiah } from '../../utils/formatRupiah';
 import { COLORS, SPACING } from '../../utils/constants';
 
-const periodeOptions = ['1 Jun 2025 - 7 Jun 2025', '8 Jun 2025 - 14 Jun 2025', '15 Jun 2025 - 21 Jun 2025'];
-const orderTypeData = [
-  { label: 'Dine-in', persen: 20, warna: '#2D5016' },
-  { label: 'Take Away', persen: 35, warna: '#2D5016' },
-  { label: 'Delivery', persen: 45, warna: '#3B82F6' },
+const periodeOptions = [
+  '1 Jun 2025 - 7 Jun 2025',
+  '8 Jun 2025 - 14 Jun 2025',
+  '15 Jun 2025 - 21 Jun 2025',
 ];
+
+const orderTypeData = [
+  { label: 'Dine-in',   persen: 20, warna: '#74AD86' },
+  { label: 'Take Away', persen: 35, warna: '#65AB79' },
+  { label: 'Delivery',  persen: 45, warna: '#56A3C0' },
+];
+
 const menuTerlarisLaporan = [
   { nama: 'Nasi Bakar Ayam', jumlah: 32 },
   { nama: 'Nasi Bakar Cumi', jumlah: 21 },
-  { nama: 'Es Teh Manis', jumlah: 18 },
+  { nama: 'Es Teh Manis',    jumlah: 18 },
 ];
 
 export default function LaporanPenjualanScreen() {
   const [periodeIndex, setPeriodeIndex] = useState(0);
+
   return (
     <ScreenWrapper>
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity><Ionicons name="menu" size={24} color={COLORS.textPrimary} /></TouchableOpacity>
-        <Text style={styles.headerTitle}>Laporan Penjualan</Text>
-        <View style={{ width: 24 }} />
-      </View>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <TouchableOpacity style={styles.periodeBox} onPress={() => setPeriodeIndex((i) => (i + 1) % periodeOptions.length)} activeOpacity={0.85}>
-          <Text style={styles.periodeText}>{periodeOptions[periodeIndex]}</Text>
-          <Ionicons name="chevron-down" size={18} color={COLORS.textSecondary} />
+        <TouchableOpacity>
+          <Ionicons name="menu-outline" size={22} color="#19231F" />
         </TouchableOpacity>
+        <Text style={styles.headerTitle}>Laporan Penjualan</Text>
+        <View style={{ width: 22 }} />
+      </View>
+
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Periode */}
+        <TouchableOpacity
+          style={styles.periodeBox}
+          onPress={() => setPeriodeIndex((i) => (i + 1) % periodeOptions.length)}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.periodeText}>{periodeOptions[periodeIndex]}</Text>
+          <Ionicons name="chevron-down" size={20} color="#19231F" />
+        </TouchableOpacity>
+
+        {/* Stat Cards */}
         <View style={styles.row}>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Total Transaksi</Text>
-            <Text style={styles.statBig}>52</Text>
+            <Text style={[styles.statValue, { fontSize: 25, lineHeight: 36.25 }]}>52</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Total Pendapatan</Text>
-            <Text style={styles.statMed}>{formatRupiah(1250000)}</Text>
+            <Text style={[styles.statValue, { fontSize: 19, lineHeight: 27.55 }]}>{formatRupiah(1250000)}</Text>
           </View>
         </View>
+
+        {/* Chart Jenis Order */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Penjualan Berdasarkan Jenis Order</Text>
           {orderTypeData.map((item) => (
@@ -53,16 +73,15 @@ export default function LaporanPenjualanScreen() {
             </View>
           ))}
         </View>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Menu Terlaris</Text>
-          {menuTerlarisLaporan.map((item, index) => (
-            <View key={item.nama}>
-              <View style={styles.menuRow}>
-                <Ionicons name="flame-outline" size={18} color={COLORS.accentGold} style={{ marginRight: 8 }} />
-                <Text style={styles.menuNama}>{item.nama}</Text>
-                <Text style={styles.menuJumlah}>{item.jumlah}</Text>
-              </View>
-              {index < menuTerlarisLaporan.length - 1 && <View style={styles.divider} />}
+
+        {/* Menu Terlaris */}
+        <View style={[styles.section, { gap: 20 }]}>
+          <Text style={[styles.sectionTitle, { fontSize: 17, lineHeight: 24.65 }]}>Menu Terlaris</Text>
+          {menuTerlarisLaporan.map((item) => (
+            <View key={item.nama} style={styles.menuRow}>
+              <Ionicons name="flame-outline" size={19} color="#CAA741" style={{ marginRight: 12 }} />
+              <Text style={styles.menuNama}>{item.nama}</Text>
+              <Text style={styles.menuJumlah}>{item.jumlah}</Text>
             </View>
           ))}
         </View>
@@ -72,25 +91,60 @@ export default function LaporanPenjualanScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.md, paddingVertical: SPACING.md },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: COLORS.textPrimary },
-  content: { paddingHorizontal: SPACING.md, paddingBottom: SPACING.xl, gap: SPACING.sm },
-  periodeBox: { backgroundColor: COLORS.white, borderRadius: 10, borderWidth: 1, borderColor: COLORS.border, paddingHorizontal: SPACING.md, paddingVertical: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  periodeText: { fontSize: 14, color: COLORS.textPrimary, fontWeight: '500' },
-  row: { flexDirection: 'row', gap: SPACING.sm },
-  statCard: { flex: 1, backgroundColor: COLORS.white, borderRadius: 12, padding: SPACING.md, elevation: 1 },
-  statLabel: { fontSize: 12, color: COLORS.textSecondary, marginBottom: 6 },
-  statBig: { fontSize: 36, fontWeight: '700', color: COLORS.textPrimary },
-  statMed: { fontSize: 18, fontWeight: '700', color: COLORS.textPrimary },
-  section: { backgroundColor: COLORS.white, borderRadius: 12, padding: SPACING.md, elevation: 1 },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary, marginBottom: SPACING.sm },
-  chartRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: SPACING.sm },
-  chartLabel: { width: 76, fontSize: 13, color: COLORS.textSecondary },
-  barTrack: { flex: 1, height: 10, backgroundColor: '#EDE8DE', borderRadius: 6, overflow: 'hidden' },
-  barFill: { height: '100%', borderRadius: 6 },
-  chartPersen: { width: 36, fontSize: 13, color: '#3B82F6', fontWeight: '600', textAlign: 'right' },
-  menuRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: SPACING.sm },
-  menuNama: { flex: 1, fontSize: 14, color: COLORS.textPrimary },
-  menuJumlah: { fontSize: 14, color: COLORS.textSecondary, fontWeight: '600' },
-  divider: { height: 1, backgroundColor: '#F0EBE0' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.lg,
+    height: 62,
+  },
+  headerTitle: { fontSize: 22, fontWeight: '600', color: '#19231F' },
+  content: {
+    paddingHorizontal: SPACING.lg,
+    paddingTop: 12,
+    paddingBottom: SPACING.xl,
+    gap: 20,
+  },
+  periodeBox: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E1E4E1',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  periodeText: { fontSize: 16, fontWeight: '400', color: 'black' },
+  row: { flexDirection: 'row', gap: 16 },
+  statCard: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.56)',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E1E4E1',
+    gap: 15,
+    minHeight: 116,
+  },
+  statLabel: { fontSize: 12, fontWeight: '400', color: '#79828A', lineHeight: 17.4 },
+  statValue: { fontWeight: '400', color: '#19231F' },
+  section: {
+    backgroundColor: 'rgba(255,255,255,0.56)',
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#E1E4E1',
+    gap: 24,
+  },
+  sectionTitle: { fontSize: 16, fontWeight: '600', color: '#19231F', lineHeight: 23.2 },
+  chartRow: { flexDirection: 'row', alignItems: 'center', gap: 13 },
+  chartLabel: { width: 92, fontSize: 15, fontWeight: '400', color: 'black' },
+  barTrack: { flex: 1, height: 17, backgroundColor: '#EFF4F5', overflow: 'hidden' },
+  barFill: { height: 17 },
+  chartPersen: { width: 38, fontSize: 15, fontWeight: '400', color: '#4284A4', textAlign: 'right' },
+  menuRow: { flexDirection: 'row', alignItems: 'center' },
+  menuNama: { flex: 1, fontSize: 15, fontWeight: '400', color: 'black' },
+  menuJumlah: { fontSize: 15, fontWeight: '400', color: 'black' },
 });
