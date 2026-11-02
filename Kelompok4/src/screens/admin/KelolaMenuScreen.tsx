@@ -1,16 +1,45 @@
-import React, { useState } from 'react';
-import { View, Text, FlatList, TextInput, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, TextInput, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ScreenWrapper from '../../components/layout/ScreenWrapper';
-import { menuData, MenuItem } from '../../data/menuData';
-import { formatRupiah } from '../../utils/formatRupiah';
+import { supabase } from '../../lib/supabase';
 import { COLORS, SPACING } from '../../utils/constants';
+
+interface MenuItem {
+  id: string;
+  nama: string;
+  harga: number;
+  deskripsi: string;
+  gambar: string;
+  kategori: string;
+  tersedia: boolean;
+}
+
+function formatRupiah(angka: number) {
+  return 'Rp ' + angka.toLocaleString('id-ID');
+}
 
 export default function KelolaMenuScreen() {
   const router = useRouter();
   const [search, setSearch] = useState('');
-  const filtered = menuData.filter((m) =>
+  const [menu, setMenu] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchMenu = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('menu')
+      .select('*')
+      .order('created_at', { ascending: true });
+    if (error) Alert.alert('Error', error.message);
+    else setMenu(data ?? []);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchMenu(); }, []);
+
+  const filtered = menu.filter((m) =>
     m.nama.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -26,9 +55,7 @@ export default function KelolaMenuScreen() {
         <Text style={styles.menuHarga}>{formatRupiah(item.harga)}</Text>
         <View style={styles.badgeRow}>
           {item.kategori === 'Produk' && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>Produk</Text>
-            </View>
+            <View style={styles.badge}><Text style={styles.badgeText}>Produk</Text></View>
           )}
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{item.tersedia ? 'Tersedia' : 'Habis'}</Text>
@@ -41,16 +68,12 @@ export default function KelolaMenuScreen() {
 
   return (
     <ScreenWrapper>
-      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity>
-          <Ionicons name="menu-outline" size={22} color={COLORS.textPrimary} />
-        </TouchableOpacity>
+        <TouchableOpacity><Ionicons name="menu-outline" size={22} color={COLORS.textPrimary} /></TouchableOpacity>
         <Text style={styles.headerTitle}>Kelola Menu</Text>
         <View style={{ width: 22 }} />
       </View>
 
-      {/* Search + Tambah */}
       <View style={styles.searchRow}>
         <View style={styles.searchBox}>
           <Ionicons name="search-outline" size={20} color="#79828A" style={{ marginRight: 10 }} />
@@ -71,114 +94,46 @@ export default function KelolaMenuScreen() {
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 32 }}
-      />
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 32 }}
+          onRefresh={fetchMenu}
+          refreshing={loading}
+          ListEmptyComponent={
+            <View style={{ alignItems: 'center', paddingTop: 40 }}>
+              <Text style={{ color: '#79828A' }}>Belum ada menu</Text>
+            </View>
+          }
+        />
+      )}
     </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.lg,
-    height: 62,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#19231F',
-  },
-  searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingBottom: 20,
-    gap: 14,
-  },
-  searchBox: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.69)',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    height: 52,
-    borderWidth: 1,
-    borderColor: '#E1E4E1',
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#79828A',
-  },
-  btnTambah: {
-    backgroundColor: '#155A3D',
-    paddingHorizontal: 16,
-    height: 38,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  btnTambahText: {
-    color: 'white',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: 12,
-    gap: 18,
-  },
-  menuImage: {
-    width: 94,
-    height: 98,
-    borderRadius: 10,
-    backgroundColor: '#E0DAD0',
-  },
-  menuInfo: {
-    flex: 1,
-    gap: 9,
-  },
-  menuNama: {
-    fontSize: 16,
-    fontWeight: '400',
-    color: '#19231F',
-    lineHeight: 23.2,
-  },
-  menuHarga: {
-    fontSize: 15,
-    fontWeight: '400',
-    color: '#19231F',
-    lineHeight: 21.75,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    backgroundColor: '#DFF1DE',
-    borderRadius: 10,
-  },
-  badgeText: {
-    color: '#155A3D',
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#E1E4E1',
-    marginHorizontal: SPACING.lg,
-  },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.lg, height: 62 },
+  headerTitle: { fontSize: 22, fontWeight: '600', color: '#19231F' },
+  searchRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.lg, paddingBottom: 20, gap: 14 },
+  searchBox: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.69)', borderRadius: 8, paddingHorizontal: 12, height: 52, borderWidth: 1, borderColor: '#E1E4E1' },
+  searchInput: { flex: 1, fontSize: 16, color: '#79828A' },
+  btnTambah: { backgroundColor: '#155A3D', paddingHorizontal: 16, height: 38, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  btnTambahText: { color: 'white', fontWeight: '600', fontSize: 14 },
+  menuItem: { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: SPACING.lg, paddingVertical: 12, gap: 18 },
+  menuImage: { width: 94, height: 98, borderRadius: 10, backgroundColor: '#E0DAD0' },
+  menuInfo: { flex: 1, gap: 9 },
+  menuNama: { fontSize: 16, fontWeight: '400', color: '#19231F', lineHeight: 23.2 },
+  menuHarga: { fontSize: 15, fontWeight: '400', color: '#19231F', lineHeight: 21.75 },
+  badgeRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  badge: { paddingHorizontal: 8, paddingVertical: 3, backgroundColor: '#DFF1DE', borderRadius: 10 },
+  badgeText: { color: '#155A3D', fontSize: 11, fontWeight: '500' },
+  separator: { height: 1, backgroundColor: '#E1E4E1', marginHorizontal: SPACING.lg },
 });
