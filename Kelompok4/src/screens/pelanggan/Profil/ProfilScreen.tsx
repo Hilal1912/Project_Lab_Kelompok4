@@ -1,68 +1,171 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+// src/screens/pelanggan/Profil/ProfilScreen.tsx
+
+import React, { useCallback, useState } from 'react';
+import { ActivityIndicator, Alert, View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect, useRouter } from 'expo-router';
 import CustomerTabBar from '@/components/CustomerTabBar';
+import { getCurrentCustomerProfile, type CustomerProfile } from '@/lib/customer-profile';
+import { supabase } from '@/lib/supabase';
 
 export default function ProfilScreen() {
   const router = useRouter();
+  const [profile, setProfile] = useState<CustomerProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      const loadProfile = async () => {
+        setIsLoading(true);
+        try {
+          const currentProfile = await getCurrentCustomerProfile();
+          if (currentProfile.role !== 'pelanggan' || !currentProfile.is_aktif) {
+            throw new Error(
+              currentProfile.is_aktif
+                ? 'Silakan masuk dengan akun pelanggan.'
+                : 'Akun ini sedang dinonaktifkan. Hubungi pengelola.'
+            );
+          }
+          if (isActive) setProfile(currentProfile);
+        } catch (error) {
+          console.error('Failed to load customer profile:', error);
+          if (isActive) {
+            const needsLogin =
+              error instanceof Error && error.message === 'Silakan masuk terlebih dahulu.';
+            Alert.alert(
+              'Gagal memuat profil',
+              error instanceof Error ? error.message : 'Terjadi kesalahan saat memuat profil.',
+              needsLogin
+                ? [{ text: 'Login', onPress: () => router.replace('/login') }]
+                : [{ text: 'OK' }]
+            );
+          }
+        } finally {
+          if (isActive) setIsLoading(false);
+        }
+      };
+
+      void loadProfile();
+      return () => {
+        isActive = false;
+      };
+    }, [router])
+  );
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      router.replace('/login');
+    } catch (error) {
+      console.error('Failed to sign out customer:', error);
+      Alert.alert(
+        'Gagal keluar',
+        error instanceof Error ? error.message : 'Terjadi kesalahan saat keluar dari akun.'
+      );
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   return (
-    <SafeAreaView className="flex-1 bg-orange-50">
-
+    <SafeAreaView className="flex-1 bg-[#FAF8F1]">
       {/* Header */}
-      <View className="h-16 px-6 flex-row items-center gap-4">
-        <TouchableOpacity
-          className="w-8 h-8 justify-center"
-          onPress={() => router.push('/home')}
-        >
-          <Feather name="arrow-left" size={24} color="#18181b" />
-        </TouchableOpacity>
-        <Text className="text-zinc-900 text-xl font-semibold">Profil</Text>
+      <View className="h-[52px] px-5 flex-row items-center gap-3">
+        <Text className="flex-1 text-[#19231F] text-[17px] font-semibold">
+          Profil
+        </Text>
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        className="flex-1"
+        className="flex-1 px-5"
         contentContainerStyle={{ paddingBottom: 32 }}
       >
         {/* Info Pengguna */}
-        <View className="items-center px-6 pt-6 pb-6">
-          <View className="w-20 h-20 rounded-full border border-zinc-400 justify-center items-center mb-4 bg-orange-50">
-            <Feather name="user" size={32} color="#a1a1aa" />
+        <View className="items-center pt-4 pb-[22px]">
+          <View className="w-[58px] h-[58px] rounded-full border border-[#DDE1DD] justify-center items-center mb-2.5 bg-white/50">
+            <Ionicons name="person-outline" size={36} color="#C8CECA" />
           </View>
-          <Text className="text-zinc-900 text-2xl font-semibold leading-8 mb-1">Nurkhotimah</Text>
-          <Text className="text-zinc-900 text-base font-normal leading-6">nurkhotimah@email.com</Text>
-          <Text className="text-zinc-900 text-base font-normal leading-6">0812 3456 7890</Text>
+          {isLoading ? (
+            <ActivityIndicator size="small" color="#155A3D" />
+          ) : (
+            <>
+              <Text className="text-[#19231F] text-[14px] font-semibold">
+                {profile?.nama || 'Nama belum diatur'}
+              </Text>
+              <Text className="text-[#68736E] text-[10px] mt-1.5">
+                {profile?.email || '-'}
+              </Text>
+              <Text className="text-[#68736E] text-[10px] mt-1">{profile?.no_hp || '-'}</Text>
+            </>
+          )}
         </View>
 
         {/* Menu Navigasi Profil */}
-        <View className="mx-6 bg-white/60 rounded-xl border border-neutral-200 flex-col overflow-hidden">
+        <View className="bg-[#FFFFFF] rounded-[9px] border border-[#E1E4E1] px-[11px] flex-col overflow-hidden">
+          {/* Data Diri (Edit Nama Pelanggan) */}
+          <TouchableOpacity
+            className="min-h-[39px] border-b border-[#EEF0EC] flex-row items-center gap-[9px] active:opacity-70"
+            onPress={() => router.push('/edit-profil')}
+          >
+            <Ionicons name="person-outline" size={17} color="#68736E" />
+            <Text className="flex-1 text-[#19231F] text-[11px]">Data Diri</Text>
+            <Ionicons name="chevron-forward" size={16} color="#A9B0AC" />
+          </TouchableOpacity>
+
+          {/* Alamat Saya */}
+          <TouchableOpacity
+            className="min-h-[39px] border-b border-[#EEF0EC] flex-row items-center gap-[9px] active:opacity-70"
+            onPress={() => router.push('/alamat-tersimpan')}
+          >
+            <Ionicons name="location-outline" size={17} color="#68736E" />
+            <Text className="flex-1 text-[#19231F] text-[11px]">Alamat Saya</Text>
+            <Ionicons name="chevron-forward" size={16} color="#A9B0AC" />
+          </TouchableOpacity>
 
           {/* Riwayat Pesanan */}
           <TouchableOpacity
-            className="px-4 py-4 border-b border-neutral-200 flex-row items-center gap-4 active:bg-white"
-            onPress={() => router.push('/orders')}
+            className="min-h-[39px] border-b border-[#EEF0EC] flex-row items-center gap-[9px] active:opacity-70"
+            onPress={() => router.push('/orders' as any)}
           >
-            <Feather name="clipboard" size={20} color="#18181b" />
-            <Text className="flex-1 text-zinc-900 text-base font-normal">Riwayat Pesanan</Text>
-            <Feather name="chevron-right" size={20} color="#6b7280" />
+            <Ionicons name="receipt-outline" size={17} color="#68736E" />
+            <Text className="flex-1 text-[#19231F] text-[11px]">Riwayat Pesanan</Text>
+            <Ionicons name="chevron-forward" size={16} color="#A9B0AC" />
+          </TouchableOpacity>
+          {/* Pengaturan */}
+          <TouchableOpacity
+            className="min-h-[39px] border-b border-[#EEF0EC] flex-row items-center gap-[9px] active:opacity-70"
+            onPress={() => {}}
+          >
+            <Ionicons name="settings-outline" size={17} color="#68736E" />
+            <Text className="flex-1 text-[#19231F] text-[11px]">Pengaturan</Text>
+            <Ionicons name="chevron-forward" size={16} color="#A9B0AC" />
           </TouchableOpacity>
 
           {/* Logout */}
           <TouchableOpacity
-            className="px-4 py-4 flex-row items-center gap-4 active:bg-white"
-            onPress={() => router.replace('/')}
+            className="min-h-[39px] flex-row items-center gap-[9px] active:opacity-70"
+            onPress={() => void handleLogout()}
+            disabled={isLoggingOut}
           >
-            <Feather name="log-out" size={20} color="#ef4444" />
-            <Text className="flex-1 text-red-500 text-base font-normal">Logout</Text>
-            <Feather name="chevron-right" size={20} color="#6b7280" />
+            <Ionicons name="log-out-outline" size={17} color="#D65A55" />
+            <Text className="flex-1 text-[#D65A55] text-[11px]">
+              {isLoggingOut ? 'Keluar...' : 'Logout'}
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color="#A9B0AC" />
           </TouchableOpacity>
 
         </View>
 
       </ScrollView>
+      {/* Jangan lupa tampilkan tab bar di bawah jika ini layar utama profil */}
       <CustomerTabBar />
     </SafeAreaView>
   );

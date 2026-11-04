@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ScreenWrapper from '../../components/layout/ScreenWrapper';
@@ -14,10 +14,7 @@ export default function DashboardScreen() {
   const router = useRouter();
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Yakin ingin keluar?', [
-      { text: 'Batal', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: () => router.replace('/login') },
-    ]);
+    router.replace('/login');
   };
 
   return (
@@ -28,7 +25,11 @@ export default function DashboardScreen() {
           <Ionicons name="menu-outline" size={22} color={COLORS.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Dashboard</Text>
-        <TouchableOpacity onPress={handleLogout}>
+        <TouchableOpacity
+          onPress={handleLogout}
+          accessibilityRole="button"
+          accessibilityLabel="Keluar dari dashboard admin"
+        >
           <Ionicons name="log-out-outline" size={22} color={COLORS.primary} />
         </TouchableOpacity>
       </View>
