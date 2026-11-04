@@ -31,6 +31,21 @@ Alur kurir mencakup detail dan edit profil, status ketersediaan, informasi kenda
 
 Status pesanan, riwayat pengantaran, status aktif kurir, informasi profil, dan kendaraan disimpan secara lokal menggunakan AsyncStorage. Perubahan tetap tersedia setelah aplikasi dimuat ulang pada perangkat atau browser yang sama, tetapi belum disinkronkan ke backend maupun perangkat lain. Data ini adalah data demo dan penyimpanan AsyncStorage tidak dienkripsi.
 
+## Data pelanggan di Supabase
+
+Aplikasi memakai tabel backend yang sudah ada: `users` dan `alamat`. Minta
+pemilik proyek menerapkan semua migrasi di `supabase/migrations/` secara
+berurutan melalui Supabase CLI atau SQL Editor. Migrasi keamanan menghubungkan
+Supabase Auth dengan `users`, membatasi akses baris ke pemilik akun, dan
+menutup akses publik ke kolom kredensial. Migrasi backfill menambahkan baris
+`users` untuk akun pelanggan Auth yang dibuat sebelum trigger aktif. Login
+menggunakan Supabase Auth; aplikasi tidak membaca atau membandingkan
+`password_hash`.
+
+Untuk akun yang baru dibuat di tabel `users`, daftar sekali menggunakan email
+yang sama agar akun Supabase Auth terhubung ke baris pelanggan tersebut. Jika
+konfirmasi email aktif, konfirmasi email sebelum masuk.
+
 ## Get a fresh project
 
 When you're ready, run:

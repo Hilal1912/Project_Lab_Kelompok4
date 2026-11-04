@@ -1,6 +1,8 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, RefreshControl } from 'react-native';
+import React from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ScreenWrapper from '../../components/layout/ScreenWrapper';
@@ -45,6 +47,7 @@ export default function DashboardScreen() {
         }
       },
     ]);
+    router.replace('/login');
   };
 
   return (
@@ -54,7 +57,11 @@ export default function DashboardScreen() {
           <Ionicons name="menu-outline" size={22} color={COLORS.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Dashboard</Text>
-        <TouchableOpacity onPress={handleLogout}>
+        <TouchableOpacity
+          onPress={handleLogout}
+          accessibilityRole="button"
+          accessibilityLabel="Keluar dari dashboard admin"
+        >
           <Ionicons name="log-out-outline" size={22} color={COLORS.primary} />
         </TouchableOpacity>
       </View>
