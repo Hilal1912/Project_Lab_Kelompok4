@@ -1,7 +1,34 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useSyncExternalStore } from 'react';
+/* eslint-disable react-hooks/set-state-in-effect */
+// State layer kurir — semua data dari Supabase, bukan AsyncStorage
+// File ini menggantikan implementasi lama yang pakai dummy data + AsyncStorage
+
+import { useEffect, useState, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
+import {
+  getPesananAktifKurir,
+  getPesananAntrian,
+  getRiwayatPengantaran,
+  updateStatusPesanan,
+  type PesananKurir,
+} from '../lib/courier-service';
 
 export type CourierOrderStatus = 'antrian' | 'proses' | 'perjalanan' | 'selesai';
+
+// Mapping status DB → status internal kurir
+const dbToLocalStatus: Record<string, CourierOrderStatus> = {
+  'Dalam Antrian': 'antrian',
+  'Sedang Diproses': 'proses',
+  'Dalam Pengiriman': 'perjalanan',
+  'Selesai': 'selesai',
+};
+
+// Mapping status internal kurir → status DB berikutnya
+const nextStatusDB: Record<CourierOrderStatus, string> = {
+  antrian: 'Sedang Diproses',
+  proses: 'Dalam Pengiriman',
+  perjalanan: 'Selesai',
+  selesai: 'Selesai',
+};
 
 export interface CourierOrderItem {
   name: string;
@@ -10,15 +37,20 @@ export interface CourierOrderItem {
 }
 
 export interface CourierOrder {
-  id: string;
-  time: string;
-  dateTime: string;
-  customer: string;
-  address: string;
+  id: string;          // pesanan.id (uuid)
+  nomor: string;       // pesanan.nomor_order
+  time: string;        // jam dari pesanan.waktu
+  dateTime: string;    // tanggal + jam
+  customer: string;    // dari pesanan.alamat atau catatan (nama pelanggan belum di-join)
+  address: string;     // pesanan.alamat
+  note?: string;       // pesanan.catatan
   status: CourierOrderStatus;
   items: CourierOrderItem[];
   deliveryFee: number;
+  subtotal: number;
+  total: number;
   paymentStatus: string;
+  metode_bayar: string | null;
 }
 
 export interface CourierProfile {
@@ -27,302 +59,173 @@ export interface CourierProfile {
   courierId: string;
   phone: string;
   email: string;
-  region: string;
-  vehicleType: string;
-  vehicleName: string;
-  plate: string;
+  userId: string;
+  region?: string;
+  vehicleName?: string;
+  plate?: string;
 }
 
-interface CourierDataSnapshot {
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function mapPesananToOrder(p: PesananKurir): CourierOrder {
+  const waktu = p.waktu ? String(p.waktu).slice(0, 5) : '-';
+  const tanggal = p.tanggal
+    ? new Date(p.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+    : '-';
+  const items: CourierOrderItem[] = (p.pesanan_items ?? []).map((item) => ({
+    name: item.nama_menu,
+    quantity: item.qty,
+    unitPrice: item.harga,
+  }));
+  return {
+    id: p.id,
+    nomor: p.nomor_order,
+    time: waktu,
+    dateTime: `${tanggal} · ${waktu}`,
+    customer: p.alamat ?? 'Pelanggan',
+    address: p.alamat ?? '-',
+    note: p.catatan ?? undefined,
+    status: dbToLocalStatus[p.status] ?? 'antrian',
+    items,
+    deliveryFee: p.ongkir ?? 0,
+    subtotal: p.subtotal ?? 0,
+    total: p.total,
+    paymentStatus: 'Lunas',
+    metode_bayar: p.metode_bayar,
+  };
+}
+
+// ─── Hook utama kurir ─────────────────────────────────────────────────────────
+
+interface CourierDataState {
   orders: CourierOrder[];
   history: CourierOrder[];
   profile: CourierProfile;
-}
-
-interface CourierHookSnapshot extends CourierDataSnapshot {
   isHydrated: boolean;
   persistenceError: string | null;
+  refresh: () => Promise<void>;
 }
 
-const storageKey = 'courier-data-v1';
-
-const initialOrders: CourierOrder[] = [
-  {
-    id: 'NB20250601',
-    time: '10:25',
-    dateTime: '1 Jun 2025 · 10:25',
-    customer: 'Nurkhotimah',
-    address: 'Jl. Cangkring No. 5, Cirebon',
-    status: 'antrian',
-    items: [
-      { name: 'Nasi Bakar Ayam', quantity: 2, unitPrice: 20000 },
-      { name: 'Es Teh Manis', quantity: 2, unitPrice: 5000 },
-    ],
-    deliveryFee: 10000,
-    paymentStatus: 'Lunas',
-  },
-  {
-    id: 'NB20250531',
-    time: '12:10',
-    dateTime: '31 Mei 2025 · 12:10',
-    customer: 'Siti Aminah',
-    address: 'Jl. Melati No. 12, Cirebon',
-    status: 'proses',
-    items: [
-      { name: 'Nasi Bakar Cumi', quantity: 1, unitPrice: 22000 },
-      { name: 'Es Teh Manis', quantity: 1, unitPrice: 10000 },
-    ],
-    deliveryFee: 10000,
-    paymentStatus: 'Lunas',
-  },
-];
-
-const initialHistory: CourierOrder[] = [
-  {
-    id: 'NB20250530',
-    time: '14:20',
-    dateTime: '30 Mei 2025 · 14:20',
-    customer: 'Siti Aminah',
-    address: 'Jl. Cangkring No. 5, Cirebon',
-    status: 'selesai',
-    items: [
-      { name: 'Nasi Bakar Ayam', quantity: 2, unitPrice: 20000 },
-      { name: 'Es Teh Manis', quantity: 2, unitPrice: 10000 },
-    ],
-    deliveryFee: 10000,
-    paymentStatus: 'Lunas',
-  },
-  {
-    id: 'NB20250528',
-    time: '11:10',
-    dateTime: '28 Mei 2025 · 11:10',
-    customer: 'Siti Aminah',
-    address: 'Jl. Cipto No. 24, Cirebon',
-    status: 'selesai',
-    items: [
-      { name: 'Nasi Bakar Cumi', quantity: 1, unitPrice: 22000 },
-      { name: 'Es Teh Manis', quantity: 1, unitPrice: 10000 },
-    ],
-    deliveryFee: 10000,
-    paymentStatus: 'Lunas',
-  },
-  {
-    id: 'NB20250525',
-    time: '16:45',
-    dateTime: '25 Mei 2025 · 16:45',
-    customer: 'Nurkhotimah',
-    address: 'Jl. Pemuda No. 5, Cirebon',
-    status: 'selesai',
-    items: [{ name: 'Nasi Bakar Ayam', quantity: 2, unitPrice: 20000 }],
-    deliveryFee: 10000,
-    paymentStatus: 'Lunas',
-  },
-];
-
-const initialProfile: CourierProfile = {
+const defaultProfile: CourierProfile = {
   isAvailable: true,
-  name: 'Ahmad Fauzi',
-  courierId: 'K001',
-  phone: '0812 3456 7890',
-  email: 'ahmad.fauzi@email.com',
-  region: 'Cirebon',
-  vehicleType: 'Sepeda motor',
-  vehicleName: 'Honda Vario',
-  plate: 'E 3456 AB',
+  name: '',
+  courierId: '',
+  phone: '',
+  email: '',
+  userId: '',
 };
 
-let snapshot: CourierDataSnapshot = {
-  orders: initialOrders,
-  history: initialHistory,
-  profile: initialProfile,
-};
+export function useCourierData(): CourierDataState {
+  const [orders, setOrders] = useState<CourierOrder[]>([]);
+  const [history, setHistory] = useState<CourierOrder[]>([]);
+  const [profile, setProfile] = useState<CourierProfile>(defaultProfile);
+  const [isHydrated, setIsHydrated] = useState(false);
+  const [persistenceError, setPersistenceError] = useState<string | null>(null);
 
-const listeners = new Set<() => void>();
-let isHydrated = false;
-let persistenceError: string | null = null;
-let hydrationPromise: Promise<void> | undefined;
-let writeQueue = Promise.resolve();
-let hookSnapshot: CourierHookSnapshot = { ...snapshot, isHydrated, persistenceError };
-
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-}
-
-function getSnapshot() {
-  return hookSnapshot;
-}
-
-function notifyListeners() {
-  hookSnapshot = { ...snapshot, isHydrated, persistenceError };
-  listeners.forEach((listener) => listener());
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
-function isCourierOrder(value: unknown): value is CourierOrder {
-  if (!isRecord(value)) return false;
-
-  return (
-    typeof value.id === 'string' &&
-    typeof value.time === 'string' &&
-    typeof value.dateTime === 'string' &&
-    typeof value.customer === 'string' &&
-    typeof value.address === 'string' &&
-    (value.status === 'antrian' ||
-      value.status === 'proses' ||
-      value.status === 'perjalanan' ||
-      value.status === 'selesai')
-  );
-}
-
-function normalizeOrder(value: CourierOrder, defaults: CourierOrder[]): CourierOrder {
-  const fallback = defaults.find((item) => item.id === value.id);
-  const stored = value as CourierOrder & {
-    items?: unknown;
-    deliveryFee?: unknown;
-    paymentStatus?: unknown;
-  };
-  const validItems =
-    Array.isArray(stored.items) &&
-    stored.items.every(
-      (item) =>
-        isRecord(item) &&
-        typeof item.name === 'string' &&
-        typeof item.quantity === 'number' &&
-        typeof item.unitPrice === 'number',
-    );
-
-  return {
-    ...fallback,
-    ...value,
-    items: validItems ? (stored.items as CourierOrderItem[]) : fallback?.items ?? [],
-    deliveryFee:
-      typeof stored.deliveryFee === 'number'
-        ? stored.deliveryFee
-        : fallback?.deliveryFee ?? 0,
-    paymentStatus:
-      typeof stored.paymentStatus === 'string'
-        ? stored.paymentStatus
-        : fallback?.paymentStatus ?? 'Lunas',
-  };
-}
-
-function restoreSnapshot(serialized: string): CourierDataSnapshot {
-  const value: unknown = JSON.parse(serialized);
-  if (
-    !isRecord(value) ||
-    value.version !== 1 ||
-    !Array.isArray(value.orders) ||
-    !value.orders.every(isCourierOrder) ||
-    !Array.isArray(value.history) ||
-    !value.history.every(isCourierOrder) ||
-    !isRecord(value.profile) ||
-    typeof value.profile.isAvailable !== 'boolean' ||
-    typeof value.profile.phone !== 'string' ||
-    typeof value.profile.email !== 'string'
-  ) {
-    throw new Error('Stored courier data has an invalid format.');
-  }
-
-  return {
-    orders: value.orders.map((order) => normalizeOrder(order, initialOrders)),
-    history: value.history.map((order) => normalizeOrder(order, initialHistory)),
-    profile: {
-      ...initialProfile,
-      ...value.profile,
-      isAvailable: value.profile.isAvailable,
-      phone: value.profile.phone,
-      email: value.profile.email,
-    },
-  };
-}
-
-function persistSnapshot() {
-  const serialized = JSON.stringify({ version: 1, ...snapshot });
-  writeQueue = writeQueue.then(async () => {
+  const fetchAll = useCallback(async () => {
+    setIsHydrated(false);
+    setPersistenceError(null);
     try {
-      await AsyncStorage.setItem(storageKey, serialized);
-      if (persistenceError) {
-        persistenceError = null;
-        notifyListeners();
+      // Ambil session user yang sedang login
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setPersistenceError('Sesi tidak ditemukan. Silakan login ulang.');
+        return;
       }
-    } catch (error) {
-      console.error('Unable to save courier data.', error);
-      persistenceError = 'Perubahan belum berhasil disimpan di perangkat.';
-      notifyListeners();
+
+      // Ambil profil kurir dari tabel users
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('id, nama, no_hp, email, kurir_id, is_aktif')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (userProfile) {
+        setProfile({
+          isAvailable: userProfile.is_aktif ?? true,
+          name: userProfile.nama,
+          courierId: userProfile.kurir_id ?? userProfile.id.slice(0, 8).toUpperCase(),
+          phone: userProfile.no_hp ?? '',
+          email: userProfile.email ?? '',
+          userId: userProfile.id,
+        });
+      }
+
+      // Ambil pesanan aktif kurir (yang sudah di-assign ke kurir ini)
+      const aktif = await getPesananAktifKurir(user.id);
+      // Tambah pesanan antrian (belum ada kurir)
+      const antrian = await getPesananAntrian();
+
+      const allAktif = [
+        ...aktif.map(mapPesananToOrder),
+        ...antrian
+          .filter((p) => !aktif.some((a) => a.id === p.id))
+          .map((p) => ({ ...mapPesananToOrder(p), status: 'antrian' as CourierOrderStatus })),
+      ];
+
+      // Ambil riwayat selesai
+      const riwayat = await getRiwayatPengantaran(user.id);
+
+      setOrders(allAktif);
+      setHistory(riwayat.map(mapPesananToOrder));
+    } catch (e: any) {
+      setPersistenceError(e.message ?? 'Gagal memuat data kurir.');
+    } finally {
+      setIsHydrated(true);
     }
-  });
-}
-
-function commitSnapshot(nextSnapshot: CourierDataSnapshot) {
-  snapshot = nextSnapshot;
-  notifyListeners();
-  persistSnapshot();
-}
-
-function hydrateSnapshot() {
-  if (!hydrationPromise) {
-    hydrationPromise = AsyncStorage.getItem(storageKey)
-      .then((serialized) => {
-        if (serialized !== null) snapshot = restoreSnapshot(serialized);
-      })
-      .catch((error: unknown) => {
-        console.error('Unable to load courier data.', error);
-        persistenceError = 'Data tersimpan tidak dapat dimuat; data contoh ditampilkan.';
-      })
-      .finally(() => {
-        isHydrated = true;
-        notifyListeners();
-      });
-  }
-  return hydrationPromise;
-}
-
-export function useCourierData() {
-  const data = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-  useEffect(() => {
-    void hydrateSnapshot();
   }, []);
-  return data;
+
+  useEffect(() => {
+    fetchAll().catch(() => null);
+    // fetchAll sudah handle error internal
+  }, [fetchAll]);
+
+  return { orders, history, profile, isHydrated, persistenceError, refresh: fetchAll };
 }
 
-export function updateCourierOrderStatus(id: string) {
-  if (!isHydrated) return;
+// ─── Actions ─────────────────────────────────────────────────────────────────
 
-  const order = snapshot.orders.find((item) => item.id === id);
-  if (!order) return;
+export async function updateCourierOrderStatus(orderId: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Tidak ada sesi aktif');
 
-  const nextStatus: CourierOrderStatus =
-    order.status === 'antrian'
-      ? 'proses'
-      : order.status === 'proses'
-        ? 'perjalanan'
-        : 'selesai';
+  // Ambil status pesanan sekarang
+  const { data: pesanan } = await supabase
+    .from('pesanan')
+    .select('status, kurir_id')
+    .eq('id', orderId)
+    .maybeSingle();
 
-  if (nextStatus === 'selesai') {
-    commitSnapshot({
-      orders: snapshot.orders.filter((item) => item.id !== id),
-      history: [{ ...order, status: 'selesai' }, ...snapshot.history],
-      profile: snapshot.profile,
-    });
-  } else {
-    commitSnapshot({
-      ...snapshot,
-      orders: snapshot.orders.map((item) =>
-        item.id === id ? { ...item, status: nextStatus } : item,
-      ),
-    });
+  if (!pesanan) throw new Error('Pesanan tidak ditemukan');
+
+  const currentLocal = dbToLocalStatus[pesanan.status] ?? 'antrian';
+  const nextDB = nextStatusDB[currentLocal];
+
+  // Kalau pesanan belum ada kurir (antrian), assign kurir sekarang
+  const updatePayload: Record<string, any> = { status: nextDB };
+  if (!pesanan.kurir_id) {
+    updatePayload.kurir_id = user.id;
+  }
+
+  await updateStatusPesanan(orderId, user.id, nextDB);
+
+  // Kalau antrian → assign kurir_id
+  if (!pesanan.kurir_id) {
+    await supabase.from('pesanan').update({ kurir_id: user.id }).eq('id', orderId);
   }
 }
 
-export function updateCourierProfile(profile: Partial<CourierProfile>) {
-  if (!isHydrated) return;
+export async function updateCourierProfile(
+  payload: Partial<Pick<CourierProfile, 'name' | 'phone' | 'isAvailable'>>,
+): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Tidak ada sesi aktif');
 
-  commitSnapshot({
-    ...snapshot,
-    profile: { ...snapshot.profile, ...profile },
-  });
+  const dbPayload: Record<string, any> = {};
+  if (payload.name !== undefined) dbPayload.nama = payload.name;
+  if (payload.phone !== undefined) dbPayload.no_hp = payload.phone;
+  if (payload.isAvailable !== undefined) dbPayload.is_aktif = payload.isAvailable;
+
+  const { error } = await supabase.from('users').update(dbPayload).eq('id', user.id);
+  if (error) throw error;
 }

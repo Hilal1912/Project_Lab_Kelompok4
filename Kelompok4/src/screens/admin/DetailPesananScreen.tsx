@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+/* eslint-disable react-hooks/set-state-in-effect */
+import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useRouter, useLocalSearchParams } from 'expo-router';
 import ScreenWrapper from '../../components/layout/ScreenWrapper';
 import { supabase } from '../../lib/supabase';
 import { COLORS, SPACING } from '../../utils/constants';
@@ -32,16 +33,28 @@ export default function DetailPesananScreen() {
   const [updating, setUpdating] = useState(false);
 
   const fetchDetail = async () => {
-    const [{ data: p }, { data: i }] = await Promise.all([
-      supabase.from('pesanan').select('*').eq('id', id).single(),
-      supabase.from('pesanan_items').select('*').eq('pesanan_id', id),
-    ]);
-    setPesanan(p);
-    setItems(i ?? []);
-    setLoading(false);
+    setLoading(true);
+    try {
+      const [{ data: p, error: pe }, { data: i, error: ie }] = await Promise.all([
+        supabase.from('pesanan').select('*').eq('id', id).single(),
+        supabase.from('pesanan_items').select('*').eq('pesanan_id', id),
+      ]);
+      if (pe) { Alert.alert('Error', pe.message); return; }
+      if (ie) { Alert.alert('Error', ie.message); return; }
+      setPesanan(p);
+      setItems(i ?? []);
+    } catch (e: any) {
+      Alert.alert('Error', e.message ?? 'Gagal memuat detail pesanan.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { fetchDetail(); }, [id]);
+  useFocusEffect(
+    useCallback(() => {
+      void fetchDetail();
+    }, [id])
+  );
 
   const handleUpdateStatus = () => {
     const currentIdx = STATUS_LIST.indexOf(pesanan.status);

@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { supabase } from '@/lib/supabase';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   // Validasi realtime — dipanggil setiap kali field berubah
@@ -39,11 +41,56 @@ export default function LoginScreen() {
 
   const isValid = () => !validateEmail(email) && !validatePassword(password);
 
-  const handleLogin = () => {
-    // Trigger semua validasi sekaligus
+  const handleLogin = async () => {
     setErrors({ email: validateEmail(email), password: validatePassword(password) });
     if (!isValid()) return;
-    router.replace('/home');
+
+    setLoading(true);
+    try {
+      // Login via Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+
+      if (authError) {
+        Alert.alert('Login Gagal', 'Email atau password salah.');
+        return;
+      }
+
+      // Ambil profil user dari tabel users untuk cek role
+      const { data: userProfile, error: profileError } = await supabase
+        .from('users')
+        .select('role, is_aktif')
+        .eq('id', authData.user.id)
+        .maybeSingle();
+
+      if (profileError || !userProfile) {
+        Alert.alert('Login Gagal', 'Profil akun tidak ditemukan.');
+        await supabase.auth.signOut();
+        return;
+      }
+
+      if (!userProfile.is_aktif) {
+        Alert.alert('Akun Dinonaktifkan', 'Akun kamu tidak aktif. Hubungi admin.');
+        await supabase.auth.signOut();
+        return;
+      }
+
+      // Arahkan berdasarkan role
+      if (userProfile.role === 'admin') {
+        router.replace('/admin/dashboard');
+      } else if (userProfile.role === 'pelanggan') {
+        router.replace('/home');
+      } else {
+        Alert.alert('Login Gagal', 'Role tidak dikenali. Gunakan login kurir untuk akun kurir.');
+        await supabase.auth.signOut();
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Terjadi kesalahan. Coba lagi.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -107,18 +154,13 @@ export default function LoginScreen() {
               <TouchableOpacity
                 className="w-full h-14 bg-green-800 rounded-lg justify-center items-center mt-6 active:bg-green-900"
                 onPress={handleLogin}
+                disabled={loading}
               >
-                <Text className="text-white text-lg font-semibold">Masuk sebagai Pelanggan</Text>
+                {loading
+                  ? <ActivityIndicator color="#fff" />
+                  : <Text className="text-white text-lg font-semibold">Masuk</Text>
+                }
               </TouchableOpacity>
-
-              {__DEV__ && (
-                <TouchableOpacity
-                  className="w-full h-12 rounded-lg border border-green-800 justify-center items-center mt-4"
-                  onPress={() => router.replace('/admin/dashboard')}
-                >
-                  <Text className="text-green-800 text-base font-semibold">Demo Admin (tanpa autentikasi)</Text>
-                </TouchableOpacity>
-              )}
 
               <TouchableOpacity
                 className="w-full h-12 rounded-lg border border-neutral-300 bg-white/70 justify-center items-center mt-3"

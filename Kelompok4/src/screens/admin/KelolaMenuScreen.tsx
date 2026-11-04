@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+/* eslint-disable react-hooks/set-state-in-effect */
+import React, { useCallback, useState } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import ScreenWrapper from '../../components/layout/ScreenWrapper';
 import { supabase } from '../../lib/supabase';
 import { COLORS, SPACING } from '../../utils/constants';
@@ -37,7 +38,11 @@ export default function KelolaMenuScreen() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchMenu(); }, []);
+  useFocusEffect(
+    useCallback(() => {
+      void fetchMenu();
+    }, [])
+  );
 
   const filtered = menu.filter((m) =>
     m.nama.toLowerCase().includes(search.toLowerCase())

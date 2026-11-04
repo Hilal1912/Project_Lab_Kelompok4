@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -49,7 +50,7 @@ export default function KelolaPesananScreen() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchPesanan(); }, [activeTab]);
+  useEffect(() => { void fetchPesanan(); }, [activeTab]);
 
   return (
     <ScreenWrapper>

@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import ScreenWrapper from '@/components/layout/ScreenWrapper';
+import { supabase } from '@/lib/supabase';
 
 const LoginKurir = () => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ phone?: string; password?: string }>({});
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const validatePhone = (value: string) => {
@@ -20,7 +22,7 @@ const LoginKurir = () => {
     value.trim() ? '' : 'Password wajib diisi'
   );
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     const nextErrors = {
       phone: validatePhone(phone),
       password: validatePassword(password),
@@ -28,7 +30,48 @@ const LoginKurir = () => {
     setErrors(nextErrors);
     if (nextErrors.phone || nextErrors.password) return;
 
-    router.replace('/pesanan-kurir');
+    setLoading(true);
+    try {
+      // Cari email berdasarkan no_hp dan role kurir di tabel users
+      const { data: userProfile, error: lookupError } = await supabase
+        .from('users')
+        .select('email, role, is_aktif')
+        .eq('no_hp', phone.trim())
+        .eq('role', 'kurir')
+        .maybeSingle();
+
+      if (lookupError || !userProfile) {
+        Alert.alert('Login Gagal', 'Nomor HP tidak terdaftar sebagai kurir.');
+        return;
+      }
+
+      if (!userProfile.is_aktif) {
+        Alert.alert('Akun Dinonaktifkan', 'Akun kurir kamu tidak aktif. Hubungi admin.');
+        return;
+      }
+
+      if (!userProfile.email) {
+        Alert.alert('Login Gagal', 'Akun kurir tidak memiliki email terdaftar.');
+        return;
+      }
+
+      // Login via Supabase Auth menggunakan email yang ditemukan
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: userProfile.email,
+        password,
+      });
+
+      if (authError) {
+        Alert.alert('Login Gagal', 'Password salah.');
+        return;
+      }
+
+      router.replace('/pesanan-kurir');
+    } catch {
+      Alert.alert('Error', 'Terjadi kesalahan. Coba lagi.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handlePhoneChange = (value: string) => {
@@ -44,6 +87,14 @@ const LoginKurir = () => {
   return (
     <ScreenWrapper>
       <View className="flex-1 justify-center px-6">
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Kembali ke pilihan akun"
+          className="absolute left-6 top-4 h-10 w-10 justify-center"
+          onPress={() => router.replace('/login')}
+        >
+          <Feather name="arrow-left" size={22} color="#202a27" />
+        </TouchableOpacity>
         <View className="items-center mb-8">
           <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
             <Feather name="truck" size={36} color="#176044" />
@@ -82,8 +133,12 @@ const LoginKurir = () => {
           <TouchableOpacity
             className="bg-emerald-800 py-3.5 rounded-xl items-center mt-4"
             onPress={handleLogin}
+            disabled={loading}
           >
-            <Text className="text-white font-bold text-base">Login</Text>
+            {loading
+              ? <ActivityIndicator color="#fff" />
+              : <Text className="text-white font-bold text-base">Login</Text>
+            }
           </TouchableOpacity>
         </View>
       </View>

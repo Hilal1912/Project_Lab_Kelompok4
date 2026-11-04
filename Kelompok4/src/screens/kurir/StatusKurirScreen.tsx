@@ -1,7 +1,7 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Text, TouchableOpacity, View } from 'react-native';
 import ScreenWrapper from '../../components/layout/ScreenWrapper';
 import CourierBottomTabs from '../../components/kurir/CourierBottomTabs';
 import CourierPersistenceNotice from '../../components/kurir/CourierPersistenceNotice';
@@ -10,12 +10,21 @@ import { updateCourierProfile, useCourierData } from '../../state/courier-orders
 export default function StatusKurirScreen() {
   const { profile, isHydrated, persistenceError } = useCourierData();
   const [selected, setSelected] = useState<boolean | null>(null);
+  const [saving, setSaving] = useState(false);
   const router = useRouter();
+
   const selectedStatus = selected ?? profile.isAvailable;
 
-  function saveStatus() {
-    updateCourierProfile({ isAvailable: selectedStatus });
-    router.replace('/detail-profil-kurir');
+  async function saveStatus() {
+    setSaving(true);
+    try {
+      await updateCourierProfile({ isAvailable: selectedStatus });
+      router.replace('/detail-profil-kurir');
+    } catch (e: any) {
+      Alert.alert('Error', e.message ?? 'Gagal menyimpan status.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -26,15 +35,17 @@ export default function StatusKurirScreen() {
         </TouchableOpacity>
         <Text className="text-[16px] font-semibold text-[#202a27]">Status Kurir</Text>
       </View>
+
       <View className="flex-1 px-4 pt-2">
         <CourierPersistenceNotice isHydrated={isHydrated} error={persistenceError} />
+
         <View className="mb-4 flex-row items-center rounded-xl border border-stone-200 bg-white/80 p-4">
           <View className="mr-3 h-11 w-11 items-center justify-center rounded-full bg-[#e1f1e2]">
             <Feather name="user" size={20} color="#176044" />
           </View>
           <View className="flex-1">
-            <Text className="text-[13px] font-semibold text-[#202a27]">{profile.name}</Text>
-            <Text className="mt-1 text-[10px] text-slate-500">ID Kurir · {profile.courierId}</Text>
+            <Text className="text-[13px] font-semibold text-[#202a27]">{profile.name || '-'}</Text>
+            <Text className="mt-1 text-[10px] text-slate-500">ID Kurir · {profile.courierId || '-'}</Text>
           </View>
           <View className="items-end">
             <Text className="text-[10px] text-slate-400">Status saat ini</Text>
@@ -43,6 +54,7 @@ export default function StatusKurirScreen() {
             </Text>
           </View>
         </View>
+
         <Text className="mb-4 text-[12px] leading-5 text-slate-500">
           Atur ketersediaan Anda untuk menerima pesanan pengantaran.
         </Text>
@@ -84,14 +96,19 @@ export default function StatusKurirScreen() {
             Pilihan status akan disimpan setelah Anda menekan Simpan Status.
           </Text>
         </View>
+
         <TouchableOpacity
           accessibilityRole="button"
-          disabled={!isHydrated}
+          disabled={!isHydrated || saving}
           onPress={saveStatus}
           className="mb-2 items-center rounded-lg bg-emerald-800 py-3"
         >
-          <Text className="text-[13px] font-semibold text-white">Simpan Status</Text>
+          {saving
+            ? <ActivityIndicator color="#fff" />
+            : <Text className="text-[13px] font-semibold text-white">Simpan Status</Text>
+          }
         </TouchableOpacity>
+
         <TouchableOpacity
           accessibilityRole="button"
           onPress={() => router.replace('/detail-profil-kurir')}
@@ -100,6 +117,7 @@ export default function StatusKurirScreen() {
           <Text className="text-[13px] font-medium text-emerald-800">Kembali ke Detail Profil</Text>
         </TouchableOpacity>
       </View>
+
       <CourierBottomTabs activeTab="profile" />
     </ScreenWrapper>
   );
