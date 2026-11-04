@@ -1,130 +1,173 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import ScreenWrapper from '../../components/layout/ScreenWrapper';
-import { useMenu } from '../../context/menu-context';
+import { supabase } from '../../lib/supabase';
+import { COLORS, SPACING } from '../../utils/constants';
 
 export default function TambahMenuScreen() {
   const router = useRouter();
-  const { addMenu } = useMenu();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const isEdit = !!id;
+
   const [nama, setNama] = useState('');
   const [harga, setHarga] = useState('');
   const [deskripsi, setDeskripsi] = useState('');
-  const [kategori, setKategori] = useState<'Produk' | 'Minuman'>('Produk');
-  const [errors, setErrors] = useState<{ nama?: string; harga?: string }>({});
-
-  const validateNama = (value: string) => (
-    value.trim() ? '' : 'Nama menu wajib diisi'
-  );
-
-  const validateHarga = (value: string) => {
-    if (!value.trim()) return 'Harga wajib diisi';
-    return Number.isFinite(Number(value)) && Number(value) > 0
-      ? ''
-      : 'Harga harus berupa angka lebih dari 0';
-  };
+  const [gambar, setGambar] = useState('');
+  const [kategori, setKategori] = useState<'Produk' | 'Minuman' | 'Tambahan'>('Produk');
+  const [tersedia, setTersedia] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
-    const e = { nama: validateNama(nama), harga: validateHarga(harga) };
+    const e: Record<string, string> = {};
+    if (!nama.trim()) e.nama = 'Nama menu wajib diisi';
+    if (!harga.trim()) e.harga = 'Harga wajib diisi';
+    else if (isNaN(Number(harga))) e.harga = 'Harga harus berupa angka';
     setErrors(e);
-    return !e.nama && !e.harga;
+    return Object.keys(e).length === 0;
   };
 
-  const handleSimpan = () => {
+  const handleSimpan = async () => {
     if (!validate()) return;
-    addMenu({ nama: nama.trim(), harga: Number(harga), kategori, deskripsi: deskripsi.trim() });
-    if (router.canGoBack()) router.back();
-    else router.replace('/admin/menu');
+    setLoading(true);
+
+    const payload = {
+      nama: nama.trim(),
+      harga: Number(harga),
+      deskripsi: deskripsi.trim(),
+      gambar: gambar.trim() || 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400',
+      kategori,
+      tersedia,
+    };
+
+    const { error } = isEdit
+      ? await supabase.from('menu').update(payload).eq('id', id)
+      : await supabase.from('menu').insert(payload);
+
+    setLoading(false);
+    if (error) {
+      Alert.alert('Error', error.message);
+    } else {
+      Alert.alert('Berhasil', `Menu berhasil ${isEdit ? 'diperbarui' : 'ditambahkan'}!`, [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    }
   };
 
   return (
     <ScreenWrapper>
-      {/* Header */}
-      <View className="flex-row items-center justify-between px-4 py-4">
-        <TouchableOpacity onPress={() => {
-          if (router.canGoBack()) router.back();
-          else router.replace('/admin/menu');
-        }}>
-          <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color="#19231F" />
         </TouchableOpacity>
-        <Text className="text-xl font-bold text-text-main">Tambah Menu</Text>
-        <View className="w-6" />
+        <Text style={styles.headerTitle}>{isEdit ? 'Edit Menu' : 'Tambah Menu'}</Text>
+        <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView className="px-4" showsVerticalScrollIndicator={false}>
-        {/* Upload Foto */}
-        <TouchableOpacity className="bg-white border-2 border-dashed border-border rounded-xl items-center justify-center py-8 mb-4 gap-2">
-          <Ionicons name="camera-outline" size={32} color="#9E9E9E" />
-          <Text className="text-sm font-semibold text-text-sub">Upload Foto Menu</Text>
-          <Text className="text-xs text-text-muted">Ketuk untuk memilih gambar</Text>
-        </TouchableOpacity>
-
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Nama */}
-        <Text className="text-sm font-semibold text-[#334155] mb-2">Nama Menu</Text>
+        <Text style={styles.label}>Nama Menu</Text>
         <TextInput
-          className={`bg-white border rounded-xl px-4 py-3 text-sm text-text-main mb-1 ${errors.nama ? 'border-red-400' : 'border-border'}`}
+          style={[styles.input, errors.nama ? styles.inputErr : null]}
           placeholder="Contoh: Nasi Bakar Ayam"
           placeholderTextColor="#9E9E9E"
           value={nama}
-          onChangeText={(t) => { setNama(t); setErrors((e) => ({ ...e, nama: validateNama(t) })); }}
+          onChangeText={(t) => { setNama(t); setErrors((e) => ({ ...e, nama: '' })); }}
         />
-        {errors.nama && <Text className="text-xs text-red-500 mb-3">{errors.nama}</Text>}
+        {!!errors.nama && <Text style={styles.errText}>{errors.nama}</Text>}
 
         {/* Harga */}
-        <Text className="text-sm font-semibold text-[#334155] mb-2 mt-2">Harga (Rp)</Text>
+        <Text style={[styles.label, { marginTop: 12 }]}>Harga (Rp)</Text>
         <TextInput
-          className={`bg-white border rounded-xl px-4 py-3 text-sm text-text-main mb-1 ${errors.harga ? 'border-red-400' : 'border-border'}`}
+          style={[styles.input, errors.harga ? styles.inputErr : null]}
           placeholder="Contoh: 15000"
           placeholderTextColor="#9E9E9E"
           value={harga}
-          onChangeText={(t) => { setHarga(t); setErrors((e) => ({ ...e, harga: validateHarga(t) })); }}
+          onChangeText={(t) => { setHarga(t); setErrors((e) => ({ ...e, harga: '' })); }}
           keyboardType="numeric"
         />
-        {errors.harga && <Text className="text-xs text-red-500 mb-3">{errors.harga}</Text>}
+        {!!errors.harga && <Text style={styles.errText}>{errors.harga}</Text>}
+
+        {/* URL Gambar */}
+        <Text style={[styles.label, { marginTop: 12 }]}>URL Gambar (opsional)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="https://..."
+          placeholderTextColor="#9E9E9E"
+          value={gambar}
+          onChangeText={setGambar}
+          autoCapitalize="none"
+        />
 
         {/* Deskripsi */}
-        <Text className="text-sm font-semibold text-[#334155] mb-2 mt-2">Deskripsi</Text>
+        <Text style={[styles.label, { marginTop: 12 }]}>Deskripsi</Text>
         <TextInput
-          className="bg-white border border-border rounded-xl px-4 py-3 text-sm text-text-main mb-4"
+          style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
           placeholder="Deskripsi singkat menu..."
           placeholderTextColor="#9E9E9E"
           value={deskripsi}
           onChangeText={setDeskripsi}
           multiline
           numberOfLines={3}
-          style={{ height: 80, textAlignVertical: 'top' }}
         />
 
         {/* Kategori */}
-        <Text className="text-sm font-semibold text-[#334155] mb-2">Kategori</Text>
-        <View className="flex-row gap-3 mb-6">
-          {(['Produk', 'Minuman'] as const).map((k) => (
+        <Text style={[styles.label, { marginTop: 12 }]}>Kategori</Text>
+        <View style={styles.kategoriRow}>
+          {(['Produk', 'Minuman', 'Tambahan'] as const).map((k) => (
             <TouchableOpacity
               key={k}
-              className={`flex-1 py-3 rounded-xl border-2 items-center ${
-                kategori === k
-                  ? 'border-primary bg-green-50'
-                  : 'border-border bg-white'
-              }`}
+              style={[styles.kategoriBtn, kategori === k && styles.kategoriBtnActive]}
               onPress={() => setKategori(k)}
             >
-              <Text className={`text-sm font-semibold ${kategori === k ? 'text-primary' : 'text-text-sub'}`}>
-                {k}
+              <Text style={[styles.kategoriBtnText, kategori === k && styles.kategoriBtnTextActive]}>{k}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Tersedia */}
+        <Text style={[styles.label, { marginTop: 12 }]}>Ketersediaan</Text>
+        <View style={styles.kategoriRow}>
+          {[true, false].map((val) => (
+            <TouchableOpacity
+              key={String(val)}
+              style={[styles.kategoriBtn, tersedia === val && styles.kategoriBtnActive]}
+              onPress={() => setTersedia(val)}
+            >
+              <Text style={[styles.kategoriBtnText, tersedia === val && styles.kategoriBtnTextActive]}>
+                {val ? 'Tersedia' : 'Tidak Tersedia'}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Tombol Simpan */}
-        <TouchableOpacity
-          className="bg-primary rounded-xl py-4 items-center mb-8"
-          onPress={handleSimpan}
-          activeOpacity={0.85}
-        >
-          <Text className="text-white font-bold text-base">Simpan Menu</Text>
+        <TouchableOpacity style={styles.btnSimpan} onPress={handleSimpan} activeOpacity={0.85} disabled={loading}>
+          {loading
+            ? <ActivityIndicator color="white" />
+            : <Text style={styles.btnSimpanText}>{isEdit ? 'Simpan Perubahan' : 'Tambah Menu'}</Text>
+          }
         </TouchableOpacity>
       </ScrollView>
     </ScreenWrapper>
   );
 }
+
+const styles = StyleSheet.create({
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.lg, height: 62 },
+  headerTitle: { fontSize: 22, fontWeight: '600', color: '#19231F' },
+  content: { paddingHorizontal: SPACING.lg, paddingBottom: SPACING.xl },
+  label: { fontSize: 14, fontWeight: '600', color: '#334155', marginBottom: 8 },
+  input: { backgroundColor: COLORS.white, borderWidth: 1.5, borderColor: COLORS.border, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: '#0f172a', marginBottom: 4 },
+  inputErr: { borderColor: COLORS.error },
+  errText: { fontSize: 12, color: COLORS.error, marginBottom: 8, marginLeft: 4 },
+  kategoriRow: { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.md },
+  kategoriBtn: { flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1.5, borderColor: COLORS.border, alignItems: 'center', backgroundColor: COLORS.white },
+  kategoriBtnActive: { borderColor: COLORS.primary, backgroundColor: '#EBF3E8' },
+  kategoriBtnText: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '500' },
+  kategoriBtnTextActive: { color: COLORS.primary, fontWeight: '700' },
+  btnSimpan: { backgroundColor: COLORS.primary, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 8 },
+  btnSimpanText: { color: COLORS.white, fontWeight: '700', fontSize: 16 },
+});
