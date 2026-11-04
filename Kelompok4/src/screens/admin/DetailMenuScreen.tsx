@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+/* eslint-disable react-hooks/set-state-in-effect */
+import React, { useCallback, useState } from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useRouter, useLocalSearchParams } from 'expo-router';
 import ScreenWrapper from '../../components/layout/ScreenWrapper';
 import { supabase } from '../../lib/supabase';
 import { COLORS, SPACING } from '../../utils/constants';
@@ -33,7 +34,11 @@ export default function DetailMenuScreen() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchDetail(); }, [id]);
+  useFocusEffect(
+    useCallback(() => {
+      void fetchDetail();
+    }, [id])
+  );
 
   const handleHapus = () => {
     Alert.alert('Hapus Menu', `Yakin ingin menghapus ${item?.nama}?`, [
@@ -61,7 +66,9 @@ export default function DetailMenuScreen() {
   return (
     <ScreenWrapper>
       <View style={styles.header}>
-        <View style={{ width: 22 }} />
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={22} color="#19231F" />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Detail Resep</Text>
         <View style={{ width: 22 }} />
       </View>

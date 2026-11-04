@@ -1,29 +1,62 @@
-import React, { useState } from 'react';
-import { View, Text, Image, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Image, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import ScreenWrapper from '../../components/layout/ScreenWrapper';
-import { menuData } from '../../data/menuData';
 import { formatRupiah } from '../../utils/formatRupiah';
 import { COLORS, SPACING } from '../../utils/constants';
+import { getDetailMenu, updateMenu } from '../../lib/admin-service';
+import type { DbMenu } from '../../lib/supabase-types';
 
 export default function EditMenuScreen() {
   const router = useRouter();
   const { id, field } = useLocalSearchParams<{ id: string; field: string }>();
-  const item = menuData.find((m) => m.id === id) ?? menuData[0];
   const isNama = field === 'nama';
-  const [value, setValue] = useState(isNama ? item.nama : String(item.harga));
 
-  const handleSimpan = () => {
+  const [item, setItem] = useState<DbMenu | null>(null);
+  const [value, setValue] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    getDetailMenu(id)
+      .then((data) => {
+        setItem(data);
+        setValue(isNama ? (data?.nama ?? '') : String(data?.harga ?? ''));
+      })
+      .catch((e) => Alert.alert('Error', e.message))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  const handleSimpan = async () => {
     if (!value.trim()) { Alert.alert('Error', 'Field tidak boleh kosong'); return; }
-    Alert.alert('Berhasil', `${isNama ? 'Nama' : 'Harga'} berhasil diperbarui!`, [
-      { text: 'OK', onPress: () => router.back() },
-    ]);
+    if (!isNama && isNaN(Number(value))) { Alert.alert('Error', 'Harga harus berupa angka'); return; }
+
+    setSaving(true);
+    try {
+      await updateMenu(id, isNama ? { nama: value.trim() } : { harga: Number(value) });
+      Alert.alert('Berhasil', `${isNama ? 'Nama' : 'Harga'} berhasil diperbarui!`, [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <ScreenWrapper>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      </ScreenWrapper>
+    );
+  }
 
   return (
     <ScreenWrapper>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={22} color="#19231F" />
@@ -33,16 +66,22 @@ export default function EditMenuScreen() {
       </View>
 
       {/* Info Menu */}
-      <View style={styles.menuRow}>
-        <Image source={{ uri: item.gambar }} style={styles.menuImage} />
-        <View style={styles.menuInfo}>
-          <Text style={styles.menuNama}>{item.nama}</Text>
-          <Text style={styles.menuHarga}>{formatRupiah(item.harga)}</Text>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{item.kategori}</Text>
+      {item && (
+        <View style={styles.menuRow}>
+          {item.gambar ? (
+            <Image source={{ uri: item.gambar }} style={styles.menuImage} />
+          ) : (
+            <View style={[styles.menuImage, { backgroundColor: '#E0DAD0' }]} />
+          )}
+          <View style={styles.menuInfo}>
+            <Text style={styles.menuNama}>{item.nama}</Text>
+            <Text style={styles.menuHarga}>{formatRupiah(item.harga)}</Text>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{item.kategori}</Text>
+            </View>
           </View>
         </View>
-      </View>
+      )}
 
       {/* Form */}
       <View style={styles.formWrap}>
@@ -60,11 +99,12 @@ export default function EditMenuScreen() {
         <Text style={styles.hint}>
           {isNama ? 'Nama ini akan ditampilkan pada daftar menu.' : 'Harga ini akan ditampilkan pada daftar menu.'}
         </Text>
-
-        <TouchableOpacity style={styles.btnSimpan} onPress={handleSimpan} activeOpacity={0.85}>
-          <Text style={styles.btnSimpanText}>Simpan Perubahan</Text>
+        <TouchableOpacity style={styles.btnSimpan} onPress={handleSimpan} activeOpacity={0.85} disabled={saving}>
+          {saving
+            ? <ActivityIndicator color="white" />
+            : <Text style={styles.btnSimpanText}>Simpan Perubahan</Text>
+          }
         </TouchableOpacity>
-
         <TouchableOpacity style={styles.btnBatal} onPress={() => router.back()} activeOpacity={0.85}>
           <Text style={styles.btnBatalText}>Batal</Text>
         </TouchableOpacity>
@@ -75,22 +115,13 @@ export default function EditMenuScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.lg,
-    height: 62,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: SPACING.lg, height: 62,
   },
   headerTitle: { fontSize: 22, fontWeight: '600', color: '#19231F' },
   menuRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingHorizontal: SPACING.lg,
-    paddingTop: 12,
-    paddingBottom: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E1E4E1',
-    gap: 18,
+    flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: SPACING.lg,
+    paddingTop: 12, paddingBottom: 24, borderBottomWidth: 1, borderBottomColor: '#E1E4E1', gap: 18,
   },
   menuImage: { width: 94, height: 98, borderRadius: 10, backgroundColor: '#E0DAD0' },
   menuInfo: { flex: 1, gap: 9 },
@@ -98,40 +129,16 @@ const styles = StyleSheet.create({
   menuHarga: { fontSize: 15, fontWeight: '400', color: '#19231F', lineHeight: 21.75 },
   badge: { paddingHorizontal: 8, paddingVertical: 3, backgroundColor: '#DFF1DE', borderRadius: 10, alignSelf: 'flex-start' },
   badgeText: { color: '#155A3D', fontSize: 11, fontWeight: '500' },
-  formWrap: {
-    paddingHorizontal: SPACING.lg,
-    paddingTop: 32,
-    gap: 8,
-  },
+  formWrap: { paddingHorizontal: SPACING.lg, paddingTop: 32, gap: 8 },
   label: { fontSize: 16, fontWeight: '500', color: '#19231F' },
   inputWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.69)',
-    borderWidth: 1,
-    borderColor: '#155A3D',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    height: 52,
-    gap: 12,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.69)',
+    borderWidth: 1, borderColor: '#155A3D', borderRadius: 8, paddingHorizontal: 12, height: 52, gap: 12,
   },
   input: { flex: 1, fontSize: 16, fontWeight: '400', color: '#19231F' },
   hint: { fontSize: 14, fontWeight: '400', color: '#79828A', lineHeight: 20.3, marginBottom: 16 },
-  btnSimpan: {
-    backgroundColor: '#155A3D',
-    borderRadius: 8,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  btnSimpan: { backgroundColor: '#155A3D', borderRadius: 8, height: 48, justifyContent: 'center', alignItems: 'center' },
   btnSimpanText: { color: 'white', fontWeight: '600', fontSize: 14 },
-  btnBatal: {
-    borderRadius: 8,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E1E4E1',
-  },
+  btnBatal: { borderRadius: 8, height: 48, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#E1E4E1' },
   btnBatalText: { color: '#155A3D', fontWeight: '600', fontSize: 14 },
 });

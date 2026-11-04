@@ -1,16 +1,33 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import ScreenWrapper from '../../components/layout/ScreenWrapper';
 import CourierBottomTabs from '../../components/kurir/CourierBottomTabs';
 import CourierPersistenceNotice from '../../components/kurir/CourierPersistenceNotice';
 import { useCourierData } from '../../state/courier-orders';
+import { supabase } from '../../lib/supabase';
+import { getKendaraanKurir } from '../../lib/courier-service';
+import type { DbKendaraan } from '../../lib/supabase-types';
 
 export default function ProfilKurirScreen() {
   const { profile, isHydrated, persistenceError } = useCourierData();
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
+  const [kendaraan, setKendaraan] = useState<DbKendaraan | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    if (!profile.userId) return;
+    getKendaraanKurir(profile.userId)
+      .then(setKendaraan)
+      .catch(() => null);
+  }, [profile.userId]);
+
+  const handleLogout = async () => {
+    setShowLogoutConfirmation(false);
+    await supabase.auth.signOut();
+    router.replace('/login-kurir');
+  };
 
   return (
     <ScreenWrapper
@@ -23,6 +40,8 @@ export default function ProfilKurirScreen() {
 
       <ScrollView className="flex-1 px-4 pb-4 pt-1" showsVerticalScrollIndicator={false}>
         <CourierPersistenceNotice isHydrated={isHydrated} error={persistenceError} />
+
+        {/* Profil */}
         <TouchableOpacity
           accessibilityRole="link"
           onPress={() => router.push('/detail-profil-kurir')}
@@ -32,12 +51,17 @@ export default function ProfilKurirScreen() {
             <Feather name="user" size={22} color="#176044" />
           </View>
           <View className="flex-1">
-            <Text className="text-[14px] font-semibold text-[#202a27]">{profile.name}</Text>
-            <Text className="mt-1 text-[11px] text-slate-500">ID Kurir · {profile.courierId}</Text>
+            <Text className="text-[14px] font-semibold text-[#202a27]">
+              {profile.name || 'Memuat...'}
+            </Text>
+            <Text className="mt-1 text-[11px] text-slate-500">
+              ID Kurir · {profile.courierId || '-'}
+            </Text>
           </View>
           <Feather name="chevron-right" size={17} color="#89939a" />
         </TouchableOpacity>
 
+        {/* Status */}
         <TouchableOpacity
           accessibilityRole="link"
           onPress={() => router.push('/status-kurir')}
@@ -55,6 +79,7 @@ export default function ProfilKurirScreen() {
           <Feather name="chevron-right" size={16} color="#89939a" />
         </TouchableOpacity>
 
+        {/* Informasi Pribadi */}
         <View className="mb-3 rounded-xl border border-stone-200 bg-white/80 p-4">
           <View className="mb-3 flex-row items-center justify-between">
             <Text className="text-[14px] font-semibold text-[#202a27]">Informasi Pribadi</Text>
@@ -66,13 +91,12 @@ export default function ProfilKurirScreen() {
             </TouchableOpacity>
           </View>
           <Text className="mb-1 text-[11px] text-slate-400">Nomor telepon</Text>
-          <Text className="mb-3 text-[13px] text-[#202a27]">{profile.phone}</Text>
+          <Text className="mb-3 text-[13px] text-[#202a27]">{profile.phone || '-'}</Text>
           <Text className="mb-1 text-[11px] text-slate-400">Email</Text>
-          <Text className="mb-3 text-[13px] text-[#202a27]">{profile.email}</Text>
-          <Text className="mb-1 text-[11px] text-slate-400">Wilayah pengantaran</Text>
-          <Text className="text-[13px] text-[#202a27]">{profile.region}</Text>
+          <Text className="text-[13px] text-[#202a27]">{profile.email || '-'}</Text>
         </View>
 
+        {/* Kendaraan */}
         <TouchableOpacity
           accessibilityRole="link"
           onPress={() => router.push('/informasi-kendaraan')}
@@ -82,12 +106,15 @@ export default function ProfilKurirScreen() {
           <View className="ml-3 flex-1">
             <Text className="text-[13px] font-medium text-[#202a27]">Informasi Kendaraan</Text>
             <Text className="mt-1 text-[11px] text-slate-500">
-              {profile.vehicleName} · {profile.plate}
+              {kendaraan
+                ? `${kendaraan.merek_model} · ${kendaraan.plat_nomor}`
+                : 'Belum ada kendaraan terdaftar'}
             </Text>
           </View>
           <Feather name="chevron-right" size={16} color="#89939a" />
         </TouchableOpacity>
 
+        {/* Riwayat */}
         <TouchableOpacity
           accessibilityRole="link"
           onPress={() => router.push('/riwayat-pengantaran')}
@@ -98,6 +125,7 @@ export default function ProfilKurirScreen() {
           <Feather name="chevron-right" size={16} color="#89939a" />
         </TouchableOpacity>
 
+        {/* Keluar */}
         <TouchableOpacity
           accessibilityRole="button"
           onPress={() => setShowLogoutConfirmation(true)}
@@ -131,10 +159,7 @@ export default function ProfilKurirScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 accessibilityRole="button"
-                onPress={() => {
-                  setShowLogoutConfirmation(false);
-                  router.replace('/login-kurir');
-                }}
+                onPress={handleLogout}
                 className="flex-1 items-center rounded-lg bg-emerald-800 py-3"
               >
                 <Text className="text-[13px] font-semibold text-white">Keluar</Text>

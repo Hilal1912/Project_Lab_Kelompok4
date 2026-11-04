@@ -1,14 +1,30 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CustomerTabBar from '@/components/CustomerTabBar';
 import { useCart } from '@/context/cart-context';
+import { getMenuTersedia } from '@/lib/pelanggan-service';
+import type { DbMenu } from '@/lib/supabase-types';
+import { useAuth } from '@/context/auth-context';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { products, addItem } = useCart();
-  const recommended = products.slice(0, 2);
+  const { addItem } = useCart();
+  const { user } = useAuth();
+  const [menu, setMenu] = useState<DbMenu[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getMenuTersedia()
+      .then((data) => setMenu(data))
+      .catch(() => null)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const recommended = menu.slice(0, 2);
 
   return (
     <SafeAreaView className="flex-1 bg-orange-50">
@@ -16,6 +32,8 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         className="px-6 pt-3"
         contentContainerStyle={{ paddingBottom: 20 }}>
+
+        {/* Header */}
         <View className="mb-5 flex-row items-center justify-between">
           <TouchableOpacity
             className="flex-row items-center gap-2"
@@ -29,6 +47,12 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Sapaan */}
+        {user?.nama ? (
+          <Text className="mb-3 text-sm text-gray-600">Halo, {user.nama} 👋</Text>
+        ) : null}
+
+        {/* Search */}
         <TouchableOpacity
           className="mb-6 h-12 flex-row items-center rounded-lg border border-neutral-200 bg-white/70 px-4"
           onPress={() => router.push('/menu')}>
@@ -41,6 +65,7 @@ export default function HomeScreen() {
           />
         </TouchableOpacity>
 
+        {/* Banner */}
         <TouchableOpacity
           className="relative mb-6 h-44 justify-center overflow-hidden rounded-2xl bg-green-950 p-5"
           onPress={() => router.push('/menu')}>
@@ -60,12 +85,13 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
 
+        {/* Kategori */}
         <View className="mb-8 flex-row justify-between">
           {[
-            { label: 'Semua', icon: 'grid' as const },
+            { label: 'Semua',     icon: 'grid' as const },
             { label: 'Nasi Bakar', icon: 'box' as const },
-            { label: 'Minuman', icon: 'coffee' as const },
-            { label: 'Tambahan', icon: 'plus-circle' as const },
+            { label: 'Minuman',   icon: 'coffee' as const },
+            { label: 'Tambahan',  icon: 'plus-circle' as const },
           ].map((category) => (
             <TouchableOpacity
               key={category.label}
@@ -79,6 +105,7 @@ export default function HomeScreen() {
           ))}
         </View>
 
+        {/* Rekomendasi */}
         <View className="mb-4 flex-row items-center justify-between">
           <Text className="text-base font-semibold text-black">Rekomendasi untuk Kamu</Text>
           <TouchableOpacity onPress={() => router.push('/menu')}>
@@ -86,36 +113,50 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        <View className="flex-row gap-4 pb-4">
-          {recommended.map((product) => (
-            <View key={product.id} className="flex-1 gap-3">
-              <TouchableOpacity
-                accessibilityRole="button"
-                accessibilityLabel={`Lihat detail ${product.name}`}
-                className="flex-col gap-3"
-                onPress={() => router.push({ pathname: '/detail-menu', params: { id: product.id } })}>
-                <Image
-                  source={product.image}
-                  className="h-36 w-full rounded-xl"
-                  resizeMode="cover"
-                />
-                <View>
-                  <Text className="mb-1 text-base text-zinc-900">{product.name}</Text>
-                  <Text className="text-base font-semibold text-zinc-900">
-                    Rp {product.price.toLocaleString('id-ID')}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-              <TouchableOpacity
-                accessibilityRole="button"
-                accessibilityLabel={`Tambah ${product.name} ke keranjang`}
-                className="items-center rounded-lg bg-green-800 py-2"
-                onPress={() => addItem(product)}>
-                <Text className="font-semibold text-white">Tambah</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
+        {loading ? (
+          <ActivityIndicator color="#166534" />
+        ) : (
+          <View className="flex-row gap-4 pb-4">
+            {recommended.map((item) => (
+              <View key={item.id} className="flex-1 gap-3">
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel={`Lihat detail ${item.nama}`}
+                  className="flex-col gap-3"
+                  onPress={() => router.push({ pathname: '/detail-menu', params: { id: item.id } })}>
+                  {item.gambar ? (
+                    <Image
+                      source={{ uri: item.gambar }}
+                      className="h-36 w-full rounded-xl"
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View className="h-36 w-full rounded-xl bg-amber-100" />
+                  )}
+                  <View>
+                    <Text className="mb-1 text-base text-zinc-900">{item.nama}</Text>
+                    <Text className="text-base font-semibold text-zinc-900">
+                      Rp {item.harga.toLocaleString('id-ID')}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel={`Tambah ${item.nama} ke keranjang`}
+                  className="items-center rounded-lg bg-green-800 py-2"
+                  onPress={() => addItem({
+                    id: item.id,
+                    name: item.nama,
+                    price: item.harga,
+                    category: item.kategori === 'Minuman' ? 'Minuman' : 'Nasi Bakar',
+                    image: { uri: item.gambar ?? '' },
+                  })}>
+                  <Text className="font-semibold text-white">Tambah</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        )}
       </ScrollView>
       <CustomerTabBar />
     </SafeAreaView>
