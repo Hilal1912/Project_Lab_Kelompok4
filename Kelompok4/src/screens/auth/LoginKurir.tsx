@@ -95,14 +95,6 @@ const LoginKurir = () => {
         >
           <Feather name="arrow-left" size={22} color="#202a27" />
         </TouchableOpacity>
-          className="absolute left-6 top-4 z-10 flex-row items-center py-2"
-          onPress={() => router.replace('/login')}
-          accessibilityRole="button"
-          accessibilityLabel="Kembali ke login utama"
-        >
-          <Feather name="arrow-left" size={20} color="#176044" />
-          <Text className="ml-2 text-sm font-semibold text-emerald-800">Kembali ke login utama</Text>
-        </TouchableOpacity>
 
         <View className="items-center mb-8">
           <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
