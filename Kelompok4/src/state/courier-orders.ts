@@ -15,6 +15,7 @@ export interface CourierOrder {
   dateTime: string;
   customer: string;
   address: string;
+  note?: string;
   status: CourierOrderStatus;
   items: CourierOrderItem[];
   deliveryFee: number;
@@ -287,6 +288,21 @@ export function useCourierData() {
     void hydrateSnapshot();
   }, []);
   return data;
+}
+
+export async function addCourierOrder(order: CourierOrder) {
+  await hydrateSnapshot();
+  if (
+    snapshot.orders.some((item) => item.id === order.id) ||
+    snapshot.history.some((item) => item.id === order.id)
+  ) {
+    return;
+  }
+
+  commitSnapshot({
+    ...snapshot,
+    orders: [order, ...snapshot.orders],
+  });
 }
 
 export function updateCourierOrderStatus(id: string) {

@@ -1,32 +1,19 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import ScreenWrapper from '../../components/layout/ScreenWrapper';
 import { menuTerlaris } from '../../data/menuData';
-import { formatRupiah } from '../../utils/formatRupiah';
 import { COLORS, SPACING } from '../../utils/constants';
+import { formatRupiah } from '../../utils/formatRupiah';
 
 // Warna icon kotak sesuai figma
 const iconColors = ['#CF742E', '#64AE79', '#DCA322'];
 
 export default function DashboardScreen() {
-  const router = useRouter();
-
-  const handleLogout = () => {
-    Alert.alert('Logout', 'Yakin ingin keluar?', [
-      { text: 'Batal', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: () => router.replace('/login') },
-    ]);
-  };
-
   return (
     <ScreenWrapper>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity>
-          <Ionicons name="menu-outline" size={22} color={COLORS.textPrimary} />
-        </TouchableOpacity>
+        <TouchableOpacity><Ionicons name="menu" size={24} color={COLORS.textPrimary} /></TouchableOpacity>
         <Text style={styles.headerTitle}>Dashboard</Text>
         <TouchableOpacity onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={22} color={COLORS.primary} />

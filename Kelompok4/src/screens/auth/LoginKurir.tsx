@@ -44,6 +44,15 @@ const LoginKurir = () => {
   return (
     <ScreenWrapper>
       <View className="flex-1 justify-center px-6">
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Kembali ke pilihan akun"
+          className="absolute left-6 top-4 h-10 w-10 justify-center"
+          onPress={() => router.replace('/login')}
+        >
+          <Feather name="arrow-left" size={22} color="#202a27" />
+        </TouchableOpacity>
+
         <View className="items-center mb-8">
           <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
             <Feather name="truck" size={36} color="#176044" />
@@ -83,7 +92,7 @@ const LoginKurir = () => {
             className="bg-emerald-800 py-3.5 rounded-xl items-center mt-4"
             onPress={handleLogin}
           >
-            <Text className="text-white font-bold text-base">Login</Text>
+            <Text className="text-white font-bold text-base">Masuk sebagai Kurir</Text>
           </TouchableOpacity>
         </View>
       </View>

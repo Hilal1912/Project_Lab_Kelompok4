@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, TextInput, ScrollView, Modal } from 'reac
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+<<<<<<< Updated upstream
 
 export default function CheckoutScreen() {
   const router = useRouter();
@@ -30,6 +31,57 @@ export default function CheckoutScreen() {
     
     // Jika sudah lengkap, munculkan Pop-up Konfirmasi
     setShowConfirmModal(true);
+=======
+import { useState } from 'react';
+import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCart } from '@/context/cart-context';
+import { addCourierOrder } from '@/state/courier-orders';
+
+const paymentMethods = ['Cash', 'Transfer Bank', 'QRIS'];
+const deliveryAddress = 'Jl. Melati No. 12, Kec. Harjamukti, Kota Cirebon';
+
+export default function CheckoutScreen() {
+  const router = useRouter();
+  const { items, orderType, subtotal, note, setNote, placeOrder } = useCart();
+  const [paymentMethod, setPaymentMethod] = useState('Cash');
+  const deliveryFee = orderType === 'Delivery' ? 20000 : 0;
+  const total = subtotal + deliveryFee;
+
+  const submitOrder = async () => {
+    const order = placeOrder(paymentMethod);
+    if (!order) {
+      router.replace('/menu');
+      return;
+    }
+
+    if (order.orderType === 'Delivery') {
+      const createdAt = new Date(order.createdAt);
+      const time = createdAt.toLocaleTimeString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
+      await addCourierOrder({
+        id: order.id,
+        time,
+        dateTime: `${createdAt.toLocaleDateString('id-ID')} · ${time}`,
+        customer: 'Pelanggan',
+        address: deliveryAddress,
+        note: order.note,
+        status: 'antrian',
+        items: order.items.map((item) => ({
+          name: item.name,
+          quantity: item.quantity,
+          unitPrice: item.price,
+        })),
+        deliveryFee,
+        paymentStatus: paymentMethod === 'Cash' ? 'Bayar di tempat' : 'Belum dibayar',
+      });
+    }
+
+    router.replace('/orders');
+>>>>>>> Stashed changes
   };
 
   // Fungsi simulasi pilih alamat
@@ -93,6 +145,7 @@ export default function CheckoutScreen() {
             <Text className="text-[#19231F] text-[14px]">Rp {ongkir}</Text>
           </View>
 
+<<<<<<< Updated upstream
           <View className="h-[1px] bg-[#E1E4E1] w-full mb-3" />
 
           {/* Jenis Order */}
@@ -132,6 +185,52 @@ export default function CheckoutScreen() {
             {isSubmitAttempted && !alamat && (
               <Text className="text-[#CB4E57] text-[12px] mt-1.5">Pilih alamat pengiriman terlebih dahulu</Text>
             )}
+=======
+          {orderType === 'Delivery' ? (
+            <>
+              <Text className="mt-2 text-base font-semibold text-zinc-900">Alamat Pengiriman</Text>
+              <View className="flex-row items-start gap-3 rounded-lg bg-stone-100 p-3.5">
+                <Feather name="map-pin" size={18} color="#166534" />
+                <View className="flex-1">
+                  <Text className="text-sm font-medium text-zinc-900">Rumah</Text>
+                  <Text className="text-xs leading-4 text-gray-500">
+                    {deliveryAddress}
+                  </Text>
+                </View>
+              </View>
+              <TextInput
+                className="min-h-14 rounded-md border border-neutral-200 bg-white p-3 text-sm text-zinc-900"
+                placeholder="Catatan untuk kurir (opsional)"
+                placeholderTextColor="#6b7280"
+                value={note}
+                onChangeText={setNote}
+                multiline
+                textAlignVertical="top"
+              />
+            </>
+          ) : null}
+
+          <Text className="mt-2 text-base font-semibold text-zinc-900">Metode Pembayaran</Text>
+          <View className="flex-row justify-between">
+            {paymentMethods.map((method) => {
+              const selected = paymentMethod === method;
+              return (
+                <TouchableOpacity
+                  key={method}
+                  className="flex-row items-center gap-1.5"
+                  onPress={() => setPaymentMethod(method)}>
+                  <Feather
+                    name={selected ? 'check-circle' : 'circle'}
+                    size={16}
+                    color={selected ? '#166534' : '#6b7280'}
+                  />
+                  <Text className={`text-xs ${selected ? 'font-medium text-green-800' : 'text-gray-500'}`}>
+                    {method}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+>>>>>>> Stashed changes
           </View>
 
           {/* Catatan Kurir */}

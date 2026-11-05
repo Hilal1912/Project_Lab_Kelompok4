@@ -51,6 +51,12 @@ function OrderInformation({ order }: { order: CourierOrder }) {
       </Text>
       <Text className="mb-1 text-[11px] text-slate-400">Alamat tujuan</Text>
       <Text className="text-[13px] leading-5 text-[#202a27]">{order.address}</Text>
+      {order.note ? (
+        <>
+          <Text className="mb-1 mt-3 text-[11px] text-slate-400">Catatan untuk kurir</Text>
+          <Text className="text-[13px] leading-5 text-[#202a27]">{order.note}</Text>
+        </>
+      ) : null}
     </View>
   );
 }
