@@ -26,14 +26,22 @@ export default function DetailMenuScreen() {
   const [item, setItem] = useState<MenuItem | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchDetail = async () => {
-    const { data, error } = await supabase.from('menu').select('*').eq('id', id).single();
-    if (error) Alert.alert('Error', error.message);
-    else setItem(data);
-    setLoading(false);
-  };
+  useEffect(() => {
+    let isCurrent = true;
 
-  useEffect(() => { fetchDetail(); }, [id]);
+    async function loadDetail() {
+      const { data, error } = await supabase.from('menu').select('*').eq('id', id).single();
+      if (!isCurrent) return;
+      if (error) Alert.alert('Error', error.message);
+      else setItem(data);
+      setLoading(false);
+    }
+
+    void loadDetail();
+    return () => {
+      isCurrent = false;
+    };
+  }, [id]);
 
   const handleHapus = () => {
     Alert.alert('Hapus Menu', `Yakin ingin menghapus ${item?.nama}?`, [

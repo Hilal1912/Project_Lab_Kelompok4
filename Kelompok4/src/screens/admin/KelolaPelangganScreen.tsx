@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenWrapper from '../../components/layout/ScreenWrapper';
@@ -18,19 +18,33 @@ export default function KelolaPelangganScreen() {
   const [pelanggan, setPelanggan] = useState<Pelanggan[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchPelanggan = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
+  const fetchPelanggan = useCallback(() => supabase
       .from('users')
       .select('id, nama, no_hp, email')
       .eq('role', 'pelanggan')
-      .order('nama');
+      .order('nama'), []);
+
+  useEffect(() => {
+    let isCurrent = true;
+    fetchPelanggan().then(({ data, error }) => {
+      if (!isCurrent) return;
+      if (error) Alert.alert('Error', error.message);
+      else setPelanggan(data ?? []);
+      setLoading(false);
+    });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [fetchPelanggan]);
+
+  const refreshPelanggan = async () => {
+    setLoading(true);
+    const { data, error } = await fetchPelanggan();
     if (error) Alert.alert('Error', error.message);
     else setPelanggan(data ?? []);
     setLoading(false);
   };
-
-  useEffect(() => { fetchPelanggan(); }, []);
 
   const filtered = pelanggan.filter(
     (p) =>
@@ -80,7 +94,7 @@ export default function KelolaPelangganScreen() {
           )}
           contentContainerStyle={{ paddingHorizontal: SPACING.lg, gap: 20, paddingBottom: 32 }}
           showsVerticalScrollIndicator={false}
-          onRefresh={fetchPelanggan}
+          onRefresh={refreshPelanggan}
           refreshing={loading}
           ListEmptyComponent={
             <View style={{ alignItems: 'center', paddingTop: 40 }}>

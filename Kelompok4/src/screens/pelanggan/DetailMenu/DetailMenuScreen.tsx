@@ -123,7 +123,7 @@ export default function DetailMenuScreen() {
             
             <TouchableOpacity 
               className="w-full h-12 bg-[#155A3D] rounded-lg justify-center items-center mb-3 active:bg-green-900"
-              onPress={() => router.push('/keranjang')} 
+              onPress={() => router.push('/cart')}
             >
               <Text className="text-white text-[15px] font-semibold">Lihat Keranjang</Text>
             </TouchableOpacity>

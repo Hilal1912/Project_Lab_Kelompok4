@@ -5,7 +5,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import ScreenWrapper from '../../components/layout/ScreenWrapper';
 import { menuData } from '../../data/menuData';
 import { formatRupiah } from '../../utils/formatRupiah';
-import { COLORS, SPACING } from '../../utils/constants';
+import { SPACING } from '../../utils/constants';
 
 export default function EditMenuScreen() {
   const router = useRouter();

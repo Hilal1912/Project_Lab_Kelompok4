@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -39,17 +39,33 @@ export default function KelolaPesananScreen() {
   const [pesanan, setPesanan] = useState<Pesanan[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchPesanan = async () => {
-    setLoading(true);
+  const fetchPesanan = useCallback(() => {
     let query = supabase.from('pesanan').select('*').order('created_at', { ascending: false });
     if (activeTab !== 'Semua') query = query.eq('jenis_order', activeTab);
-    const { data, error } = await query;
+    return query;
+  }, [activeTab]);
+
+  useEffect(() => {
+    let isCurrent = true;
+    fetchPesanan().then(({ data, error }) => {
+      if (!isCurrent) return;
+      if (error) Alert.alert('Error', error.message);
+      else setPesanan(data ?? []);
+      setLoading(false);
+    });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [fetchPesanan]);
+
+  const refreshPesanan = async () => {
+    setLoading(true);
+    const { data, error } = await fetchPesanan();
     if (error) Alert.alert('Error', error.message);
     else setPesanan(data ?? []);
     setLoading(false);
   };
-
-  useEffect(() => { fetchPesanan(); }, [activeTab]);
 
   return (
     <ScreenWrapper>
@@ -64,7 +80,10 @@ export default function KelolaPesananScreen() {
           <TouchableOpacity
             key={tab}
             style={[styles.tab, activeTab === tab && styles.tabActive]}
-            onPress={() => setActiveTab(tab)}
+            onPress={() => {
+              setLoading(true);
+              setActiveTab(tab);
+            }}
             activeOpacity={0.8}
           >
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
@@ -101,7 +120,9 @@ export default function KelolaPesananScreen() {
           }}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: SPACING.lg, paddingBottom: 32 }}
-          onRefresh={fetchPesanan}
+          onRefresh={() => {
+            void refreshPesanan();
+          }}
           refreshing={loading}
           ListEmptyComponent={
             <View style={{ alignItems: 'center', paddingTop: 40 }}>

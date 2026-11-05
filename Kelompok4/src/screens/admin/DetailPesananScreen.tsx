@@ -31,17 +31,28 @@ export default function DetailPesananScreen() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
-  const fetchDetail = async () => {
-    const [{ data: p }, { data: i }] = await Promise.all([
-      supabase.from('pesanan').select('*').eq('id', id).single(),
-      supabase.from('pesanan_items').select('*').eq('pesanan_id', id),
-    ]);
-    setPesanan(p);
-    setItems(i ?? []);
-    setLoading(false);
-  };
+  useEffect(() => {
+    let isCurrent = true;
 
-  useEffect(() => { fetchDetail(); }, [id]);
+    async function loadDetail() {
+      const [pesananResult, itemsResult] = await Promise.all([
+        supabase.from('pesanan').select('*').eq('id', id).single(),
+        supabase.from('pesanan_items').select('*').eq('pesanan_id', id),
+      ]);
+      if (!isCurrent) return;
+
+      if (pesananResult.error) Alert.alert('Error', pesananResult.error.message);
+      else setPesanan(pesananResult.data);
+      if (itemsResult.error) Alert.alert('Error', itemsResult.error.message);
+      else setItems(itemsResult.data ?? []);
+      setLoading(false);
+    }
+
+    void loadDetail();
+    return () => {
+      isCurrent = false;
+    };
+  }, [id]);
 
   const handleUpdateStatus = () => {
     const currentIdx = STATUS_LIST.indexOf(pesanan.status);

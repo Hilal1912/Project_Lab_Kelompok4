@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import ScreenWrapper from '../../components/layout/ScreenWrapper';
 import { menuTerlaris } from '../../data/menuData';
@@ -9,6 +10,9 @@ import { formatRupiah } from '../../utils/formatRupiah';
 const iconColors = ['#CF742E', '#64AE79', '#DCA322'];
 
 export default function DashboardScreen() {
+  const router = useRouter();
+  const handleLogout = () => router.replace('/login');
+
   return (
     <ScreenWrapper>
       {/* Header */}

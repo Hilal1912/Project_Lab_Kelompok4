@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -26,18 +26,32 @@ export default function KelolaMenuScreen() {
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchMenu = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
+  const fetchMenu = useCallback(() => supabase
       .from('menu')
       .select('*')
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: true }), []);
+
+  useEffect(() => {
+    let isCurrent = true;
+    fetchMenu().then(({ data, error }) => {
+      if (!isCurrent) return;
+      if (error) Alert.alert('Error', error.message);
+      else setMenu(data ?? []);
+      setLoading(false);
+    });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [fetchMenu]);
+
+  const refreshMenu = async () => {
+    setLoading(true);
+    const { data, error } = await fetchMenu();
     if (error) Alert.alert('Error', error.message);
     else setMenu(data ?? []);
     setLoading(false);
   };
-
-  useEffect(() => { fetchMenu(); }, []);
 
   const filtered = menu.filter((m) =>
     m.nama.toLowerCase().includes(search.toLowerCase())
@@ -106,7 +120,7 @@ export default function KelolaMenuScreen() {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 32 }}
-          onRefresh={fetchMenu}
+          onRefresh={refreshMenu}
           refreshing={loading}
           ListEmptyComponent={
             <View style={{ alignItems: 'center', paddingTop: 40 }}>
