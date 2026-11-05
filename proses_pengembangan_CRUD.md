@@ -5,14 +5,20 @@ Dokumentasi singkat fitur aplikasi Nasbak Cirebon berdasarkan peran pengguna.
 ## User
 
 CRUD ALAMAT
-[Tonton user.mp4](./Kelompok4/assets/user.mp4)
+
+[![Preview User](./Kelompok4/assets/user-preview.gif)](./Kelompok4/assets/user.mp4)
+[Tonton video lengkap](./Kelompok4/assets/user.mp4)
 
 ## Admin
 
 CRUD MENU
-[Tonton Admin.mp4](./Kelompok4/assets/Admin.mp4)
+
+[![Preview Admin](./Kelompok4/assets/Admin-preview.gif)](./Kelompok4/assets/Admin.mp4)
+[Tonton video lengkap](./Kelompok4/assets/Admin.mp4)
 
 ## Kurir
 
 CRUD KENDARAAN
-[Tonton kurir.mp4](./Kelompok4/assets/kurir.mp4)
+
+[![Preview Kurir](./Kelompok4/assets/kurir-preview.gif)](./Kelompok4/assets/kurir.mp4)
+[Tonton video lengkap](./Kelompok4/assets/kurir.mp4)
