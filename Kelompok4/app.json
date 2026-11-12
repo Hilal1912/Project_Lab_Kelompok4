@@ -11,7 +11,8 @@
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
-      }
+      },
+      "package": "com.anonymous.Kelompok4"
     },
     "web": {
       "bundler": "metro",
@@ -31,10 +32,22 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
-      ]
+      ],
+      "@react-native-google-signin/google-signin"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "6d150fe2-e54a-43cf-95bf-e7334e308e80"
+      }
+    },
+    "owner": "greeds"
   }
 }
