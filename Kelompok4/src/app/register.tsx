@@ -3,6 +3,9 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, StyleSheet 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { getEmailRateLimitMessage, resendSignupConfirmation } from '@/lib/customer-auth';
+import { getCurrentCustomerProfile } from '@/lib/customer-profile';
+import { supabase } from '@/lib/supabase';
 
 export default function RegisterScreen() {
   const [nama, setNama] = useState('');
@@ -13,6 +16,10 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showKonfirmasi, setShowKonfirmasi] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [showConfirmationAction, setShowConfirmationAction] = useState(false);
+  const [confirmationMessage, setConfirmationMessage] = useState('');
+  const [isResendingConfirmation, setIsResendingConfirmation] = useState(false);
   const router = useRouter();
 
   // Fungsi validasi per field
@@ -37,7 +44,30 @@ export default function RegisterScreen() {
     setErrors((e) => ({ ...e, [field]: msg }));
   };
 
-  const handleRegister = () => {
+  const handleResendConfirmation = async () => {
+    if (!email.trim() || isResendingConfirmation) {
+      setConfirmationMessage('Masukkan email yang digunakan saat mendaftar.');
+      return;
+    }
+
+    setIsResendingConfirmation(true);
+    setConfirmationMessage('');
+    try {
+      await resendSignupConfirmation(email);
+      setConfirmationMessage('Email konfirmasi dikirim ulang. Periksa kotak masuk dan folder spam.');
+    } catch (error) {
+      const rateLimitMessage = getEmailRateLimitMessage(error);
+      if (!rateLimitMessage) console.error('Failed to resend signup confirmation:', error);
+      setConfirmationMessage(
+        rateLimitMessage ??
+          (error instanceof Error ? error.message : 'Terjadi kesalahan saat mengirim ulang email konfirmasi.')
+      );
+    } finally {
+      setIsResendingConfirmation(false);
+    }
+  };
+
+  const handleRegister = async () => {
     const newErrors: Record<string, string> = {};
     newErrors.nama = rules.nama(nama);
     newErrors.noHp = rules.noHp(noHp);
@@ -45,10 +75,74 @@ export default function RegisterScreen() {
     newErrors.password = rules.password(password);
     newErrors.konfirmasi = !konfirmasi.trim() ? 'Konfirmasi password wajib diisi' : konfirmasi !== password ? 'Password tidak cocok' : '';
     setErrors(newErrors);
-    if (Object.values(newErrors).some((v) => v)) return;
-    Alert.alert('Berhasil', 'Akun berhasil dibuat!', [
-      { text: 'Login Sekarang', onPress: () => router.replace('/login') },
-    ]);
+    if (Object.values(newErrors).some((v) => v) || isLoading) return;
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase(),
+        password,
+        options: {
+          data: {
+            nama: nama.trim(),
+            no_hp: noHp.trim(),
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      if (!data.session) {
+        setShowConfirmationAction(true);
+        Alert.alert(
+          'Konfirmasi email diperlukan',
+          `Supabase sudah membuat akun untuk ${email.trim()}. Buka email konfirmasi dari Supabase (periksa folder spam), lalu masuk. Login belum bisa digunakan sebelum email dikonfirmasi.`
+        );
+        return;
+      }
+
+      const profile = await getCurrentCustomerProfile();
+      if (profile.role !== 'pelanggan' || !profile.is_aktif) {
+        const { error: signOutError } = await supabase.auth.signOut();
+        if (signOutError) console.error('Failed to sign out non-customer account:', signOutError);
+        Alert.alert(
+          'Akun tidak dapat digunakan',
+          profile.is_aktif
+            ? 'Silakan masuk dengan akun pelanggan.'
+            : 'Akun ini sedang dinonaktifkan. Hubungi pengelola.'
+        );
+        return;
+      }
+
+      router.replace('/home');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      const normalizedMessage = message.toLowerCase();
+      const emailAlreadyRegistered =
+        normalizedMessage.includes('already registered') ||
+        normalizedMessage.includes('user already exists');
+      const rateLimitMessage = getEmailRateLimitMessage(error);
+      if (rateLimitMessage) {
+        setConfirmationMessage(rateLimitMessage);
+        Alert.alert('Batas pengiriman email tercapai', rateLimitMessage);
+      } else if (emailAlreadyRegistered) {
+        setShowConfirmationAction(true);
+        Alert.alert(
+          'Email sudah terdaftar',
+          'Jika pendaftaran sebelumnya belum dikonfirmasi, gunakan tombol kirim ulang email di bawah formulir.'
+        );
+      } else {
+        console.error('Customer registration failed:', error);
+        Alert.alert(
+          'Pendaftaran gagal',
+          normalizedMessage.includes('database error saving new user')
+            ? 'Supabase Auth tersambung, tetapi database gagal menjalankan trigger saat membuat akun. Minta backend memeriksa trigger pada auth.users dan memastikan migrasi supabase/migrations/20261104210000_secure_users_and_addresses.sql sudah diterapkan ke project Supabase yang sama.'
+            : message || 'Terjadi kesalahan saat membuat akun.'
+        );
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -107,9 +201,35 @@ export default function RegisterScreen() {
             {!!errors.konfirmasi && <Text style={s.errText}>{errors.konfirmasi}</Text>}
           </View>
 
-          <TouchableOpacity className="w-full h-14 bg-green-800 rounded-lg justify-center items-center mt-8 active:bg-green-900" onPress={handleRegister}>
-            <Text className="text-white text-lg font-semibold">Register</Text>
+          <TouchableOpacity
+            className={`w-full h-14 rounded-lg justify-center items-center mt-8 ${isLoading ? 'bg-gray-400' : 'bg-green-800 active:bg-green-900'}`}
+            onPress={handleRegister}
+            disabled={isLoading}
+          >
+            <Text className="text-white text-lg font-semibold">
+              {isLoading ? 'Membuat akun...' : 'Register'}
+            </Text>
           </TouchableOpacity>
+
+          {showConfirmationAction && (
+            <View className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4">
+              <Text className="text-amber-900 text-sm">
+                Akun perlu dikonfirmasi melalui email sebelum bisa digunakan untuk masuk.
+              </Text>
+              <TouchableOpacity
+                className="mt-3 self-start"
+                onPress={() => { void handleResendConfirmation(); }}
+                disabled={isResendingConfirmation}
+              >
+                <Text className="text-green-800 text-base font-semibold">
+                  {isResendingConfirmation ? 'Mengirim...' : 'Kirim ulang email konfirmasi'}
+                </Text>
+              </TouchableOpacity>
+              {!!confirmationMessage && (
+                <Text className="mt-2 text-sm text-zinc-700">{confirmationMessage}</Text>
+              )}
+            </View>
+          )}
 
           <View className="w-full mt-4 flex-row justify-center items-center gap-1">
             <Text className="text-gray-500 text-base">Sudah punya akun?</Text>

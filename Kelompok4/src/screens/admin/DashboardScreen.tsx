@@ -45,6 +45,7 @@ export default function DashboardScreen() {
         }
       },
     ]);
+    router.replace('/login');
   };
 
   return (
@@ -54,7 +55,11 @@ export default function DashboardScreen() {
           <Ionicons name="menu-outline" size={22} color={COLORS.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Dashboard</Text>
-        <TouchableOpacity onPress={handleLogout}>
+        <TouchableOpacity
+          onPress={handleLogout}
+          accessibilityRole="button"
+          accessibilityLabel="Keluar dari dashboard admin"
+        >
           <Ionicons name="log-out-outline" size={22} color={COLORS.primary} />
         </TouchableOpacity>
       </View>

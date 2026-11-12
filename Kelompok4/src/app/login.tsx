@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
+import { getEmailRateLimitMessage, resendSignupConfirmation } from '@/lib/customer-auth';
+import { getCurrentCustomerProfile } from '@/lib/customer-profile';
 import { supabase } from '@/lib/supabase';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { useAuth } from '@/context/auth-context';
@@ -25,7 +27,10 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
+  const [confirmationMessage, setConfirmationMessage] = useState('');
+  const [isResendingConfirmation, setIsResendingConfirmation] = useState(false);
   const router = useRouter();
   const { user } = useAuth();
   const { signInWithGoogle, loading: googleLoading } = useGoogleAuth();
@@ -37,15 +42,11 @@ export default function LoginScreen() {
     else if (user.role === 'pelanggan') router.replace('/home');
   }, [user]);
 
-  // Validasi realtime — dipanggil setiap kali field berubah
   const validateEmail = (val: string) => {
-    if (!val.trim()) return 'Email / No. HP wajib diisi';
-    const value = val.trim();
-    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-    const phoneDigits = value.replace(/\D/g, '');
-    const isPhone = /^[+\d\s()-]+$/.test(value) && phoneDigits.length >= 8 && phoneDigits.length <= 15;
-    if (!isEmail && !isPhone) return 'Masukkan email atau nomor HP yang valid';
-    return '';
+    if (!val.trim()) return 'Email wajib diisi';
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim())
+      ? ''
+      : 'Masukkan alamat email yang valid';
   };
 
   const validatePassword = (val: string) => {
@@ -55,6 +56,8 @@ export default function LoginScreen() {
 
   const handleEmailChange = (val: string) => {
     setEmail(val);
+    setNeedsEmailConfirmation(false);
+    setConfirmationMessage('');
     setErrors((e) => ({ ...e, email: validateEmail(val) }));
   };
 
@@ -65,55 +68,93 @@ export default function LoginScreen() {
 
   const isValid = () => !validateEmail(email) && !validatePassword(password);
 
+  const handleResendConfirmation = async () => {
+    const emailError = validateEmail(email);
+    if (emailError || isResendingConfirmation) {
+      setErrors((current) => ({ ...current, email: emailError }));
+      return;
+    }
+
+    setIsResendingConfirmation(true);
+    setConfirmationMessage('');
+    try {
+      await resendSignupConfirmation(email);
+      setConfirmationMessage('Email konfirmasi dikirim ulang. Periksa kotak masuk dan folder spam.');
+    } catch (error) {
+      const rateLimitMessage = getEmailRateLimitMessage(error);
+      if (!rateLimitMessage) console.error('Failed to resend signup confirmation:', error);
+      setConfirmationMessage(
+        rateLimitMessage ??
+          (error instanceof Error ? error.message : 'Terjadi kesalahan saat mengirim ulang email konfirmasi.')
+      );
+    } finally {
+      setIsResendingConfirmation(false);
+    }
+  };
+
   const handleLogin = async () => {
     setErrors({ email: validateEmail(email), password: validatePassword(password) });
-    if (!isValid()) return;
+    if (!isValid() || isLoading) return;
 
-    setLoading(true);
+    setIsLoading(true);
     try {
-      // Login via Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
       });
+      if (error) throw error;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      const normalizedMessage = message.toLowerCase();
+      const emailNotConfirmed = normalizedMessage.includes('email not confirmed');
+      const invalidCredentials = normalizedMessage.includes('invalid login credentials');
+      const emailRateLimitMessage = getEmailRateLimitMessage(error);
 
-      if (authError) {
-        Alert.alert('Login Gagal', 'Email atau password salah.');
-        return;
+      if (!emailNotConfirmed && !invalidCredentials && !emailRateLimitMessage) {
+        console.error('Customer sign in failed:', error);
       }
 
-      // Ambil profil user dari tabel users untuk cek role
-      const { data: userProfile, error: profileError } = await supabase
-        .from('users')
-        .select('role, is_aktif')
-        .eq('id', authData.user.id)
-        .maybeSingle();
-
-      if (profileError || !userProfile) {
-        Alert.alert('Login Gagal', 'Profil akun tidak ditemukan.');
-        await supabase.auth.signOut();
-        return;
-      }
-
-      if (!userProfile.is_aktif) {
-        Alert.alert('Akun Dinonaktifkan', 'Akun kamu tidak aktif. Hubungi admin.');
-        await supabase.auth.signOut();
-        return;
-      }
-
-      // Arahkan berdasarkan role
-      if (userProfile.role === 'admin') {
-        router.replace('/admin/dashboard');
-      } else if (userProfile.role === 'pelanggan') {
-        router.replace('/home');
+      if (emailNotConfirmed) {
+        setNeedsEmailConfirmation(true);
+        setConfirmationMessage('Email belum dikonfirmasi. Buka email dari Supabase atau kirim ulang tautan konfirmasi.');
       } else {
-        Alert.alert('Login Gagal', 'Role tidak dikenali. Gunakan login kurir untuk akun kurir.');
-        await supabase.auth.signOut();
+        Alert.alert(
+          'Gagal masuk',
+          emailRateLimitMessage ??
+            (invalidCredentials
+              ? 'Email atau password salah. Jika baru mendaftar, pastikan email sudah dikonfirmasi terlebih dahulu.'
+              : message || 'Terjadi kesalahan saat masuk.')
+        );
       }
-    } catch (e) {
-      Alert.alert('Error', 'Terjadi kesalahan. Coba lagi.');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const profile = await getCurrentCustomerProfile();
+      if (profile.role !== 'pelanggan' || !profile.is_aktif) {
+        const { error } = await supabase.auth.signOut();
+        if (error) console.error('Failed to sign out non-customer account:', error);
+        Alert.alert(
+          'Akun tidak dapat digunakan',
+          profile.is_aktif
+            ? 'Silakan masuk dengan akun pelanggan.'
+            : 'Akun ini sedang dinonaktifkan. Hubungi pengelola.'
+        );
+        return;
+      }
+
+      router.replace('/home');
+    } catch (error) {
+      console.error('Failed to load customer profile after sign in:', error);
+      const { error: signOutError } = await supabase.auth.signOut();
+      if (signOutError) console.error('Failed to clear unlinked customer session:', signOutError);
+      Alert.alert(
+        'Gagal memuat profil',
+        error instanceof Error ? error.message : 'Terjadi kesalahan saat memuat profil.'
+      );
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -144,7 +185,7 @@ export default function LoginScreen() {
                 <Feather name="mail" size={20} color={errors.email ? '#ef4444' : '#6b7280'} />
                 <TextInput
                   className="flex-1 ml-3.5 text-zinc-900 text-base font-normal"
-                  placeholder="Email / No. HP"
+                  placeholder="Email"
                   placeholderTextColor="#9ca3af"
                   value={email}
                   onChangeText={handleEmailChange}
@@ -176,13 +217,14 @@ export default function LoginScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                className="w-full h-14 bg-green-800 rounded-lg justify-center items-center mt-6 active:bg-green-900"
+                className={`w-full h-14 rounded-lg justify-center items-center mt-6 ${isLoading ? 'bg-gray-400' : 'bg-green-800 active:bg-green-900'}`}
                 onPress={handleLogin}
                 disabled={loading || googleLoading}
+                disabled={isLoading}
               >
-                {loading
+                {isLoading
                   ? <ActivityIndicator color="#fff" />
-                  : <Text className="text-white text-lg font-semibold">Masuk</Text>
+                  : <Text className="text-white text-lg font-semibold">Masuk sebagai Pelanggan</Text>
                 }
               </TouchableOpacity>
 
@@ -210,6 +252,34 @@ export default function LoginScreen() {
                   </>
                 )}
               </TouchableOpacity>
+              {needsEmailConfirmation && (
+                <View className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4">
+                  <Text className="text-amber-900 text-sm">
+                    Email belum dikonfirmasi. Buka email konfirmasi Supabase, termasuk folder spam.
+                  </Text>
+                  <TouchableOpacity
+                    className="mt-3 self-start"
+                    onPress={() => { void handleResendConfirmation(); }}
+                    disabled={isResendingConfirmation}
+                  >
+                    <Text className="text-green-800 text-base font-semibold">
+                      {isResendingConfirmation ? 'Mengirim...' : 'Kirim ulang email konfirmasi'}
+                    </Text>
+                  </TouchableOpacity>
+                  {!!confirmationMessage && (
+                    <Text className="mt-2 text-sm text-zinc-700">{confirmationMessage}</Text>
+                  )}
+                </View>
+              )}
+
+              {__DEV__ && (
+                <TouchableOpacity
+                  className="w-full h-12 rounded-lg border border-green-800 justify-center items-center mt-4"
+                  onPress={() => router.replace('/admin/dashboard')}
+                >
+                  <Text className="text-green-800 text-base font-semibold">Demo Admin (tanpa autentikasi)</Text>
+                </TouchableOpacity>
+              )}
 
               <TouchableOpacity
                 className="w-full h-12 rounded-lg border border-neutral-300 bg-white/70 justify-center items-center mt-3"

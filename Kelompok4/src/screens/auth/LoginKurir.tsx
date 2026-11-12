@@ -95,6 +95,7 @@ const LoginKurir = () => {
         >
           <Feather name="arrow-left" size={22} color="#202a27" />
         </TouchableOpacity>
+
         <View className="items-center mb-8">
           <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
             <Feather name="truck" size={36} color="#176044" />
