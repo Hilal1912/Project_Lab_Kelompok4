@@ -3,9 +3,24 @@ import { View, Text, TextInput, TouchableOpacity, Image, ScrollView, StyleSheet,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import Svg, { Path } from 'react-native-svg';
 import { getEmailRateLimitMessage, resendSignupConfirmation } from '@/lib/customer-auth';
 import { getCurrentCustomerProfile } from '@/lib/customer-profile';
 import { supabase } from '@/lib/supabase';
+import { useGoogleAuth } from '@/hooks/useGoogleAuth';
+import { useAuth } from '@/context/auth-context';
+
+// Icon Google asli (multicolor)
+function GoogleIcon({ size = 20 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 48 48">
+      <Path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+      <Path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+      <Path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+      <Path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+    </Svg>
+  );
+}
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -17,6 +32,15 @@ export default function LoginScreen() {
   const [confirmationMessage, setConfirmationMessage] = useState('');
   const [isResendingConfirmation, setIsResendingConfirmation] = useState(false);
   const router = useRouter();
+  const { user } = useAuth();
+  const { signInWithGoogle, loading: googleLoading } = useGoogleAuth();
+
+  // Navigasi otomatis setelah login Google berhasil (user diisi oleh auth-context)
+  React.useEffect(() => {
+    if (!user) return;
+    if (user.role === 'admin') router.replace('/admin/dashboard');
+    else if (user.role === 'pelanggan') router.replace('/home');
+  }, [user]);
 
   const validateEmail = (val: string) => {
     if (!val.trim()) return 'Email wajib diisi';
@@ -195,6 +219,7 @@ export default function LoginScreen() {
               <TouchableOpacity
                 className={`w-full h-14 rounded-lg justify-center items-center mt-6 ${isLoading ? 'bg-gray-400' : 'bg-green-800 active:bg-green-900'}`}
                 onPress={handleLogin}
+                disabled={loading || googleLoading}
                 disabled={isLoading}
               >
                 {isLoading
@@ -203,6 +228,30 @@ export default function LoginScreen() {
                 }
               </TouchableOpacity>
 
+              {/* Divider */}
+              <View className="flex-row items-center mt-4 mb-1">
+                <View className="flex-1 h-px bg-neutral-200" />
+                <Text className="mx-3 text-gray-400 text-sm">atau</Text>
+                <View className="flex-1 h-px bg-neutral-200" />
+              </View>
+
+              {/* Tombol Google Sign-In */}
+              <TouchableOpacity
+                style={s.googleBtn}
+                onPress={signInWithGoogle}
+                disabled={loading || googleLoading}
+                accessibilityRole="button"
+                accessibilityLabel="Masuk dengan Google"
+              >
+                {googleLoading ? (
+                  <ActivityIndicator color="#374151" />
+                ) : (
+                  <>
+                    <GoogleIcon size={22} />
+                    <Text style={s.googleBtnText}>Masuk dengan Google</Text>
+                  </>
+                )}
+              </TouchableOpacity>
               {needsEmailConfirmation && (
                 <View className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4">
                   <Text className="text-amber-900 text-sm">
@@ -235,6 +284,7 @@ export default function LoginScreen() {
               <TouchableOpacity
                 className="w-full h-12 rounded-lg border border-neutral-300 bg-white/70 justify-center items-center mt-3"
                 onPress={() => router.push('/login-kurir')}
+                disabled={loading || googleLoading}
               >
                 <Text className="text-zinc-800 text-base font-semibold">Login sebagai Kurir</Text>
               </TouchableOpacity>
@@ -267,4 +317,22 @@ const s = StyleSheet.create({
   },
   inputErr: { borderColor: '#ef4444' },
   errText: { color: '#ef4444', fontSize: 13, marginTop: 4, marginLeft: 4 },
+  googleBtn: {
+    width: '100%',
+    height: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    backgroundColor: '#ffffff',
+    marginTop: 4,
+    gap: 10,
+  },
+  googleBtnText: {
+    color: '#374151',
+    fontSize: 15,
+    fontWeight: '600',
+  },
 });
