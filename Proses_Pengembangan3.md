@@ -32,7 +32,9 @@ Memudahkan pelanggan masuk tanpa membuat atau mengetik kata sandi aplikasi. Aute
 
 ## Video Demo
 
-<video controls src="./Kelompok4/assets/Login-Google.mp4" title="Video demo login Google"></video>
+[![Video demo login Google](./Kelompok4/assets/Login-Google-preview.gif)](./Kelompok4/assets/Login-Google.mp4)
+
+[Buka video lengkap](./Kelompok4/assets/Login-Google.mp4)
 
 ## Catatan Status
 
